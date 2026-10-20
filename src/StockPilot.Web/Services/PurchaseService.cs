@@ -75,12 +75,13 @@ public class PurchaseService : IPurchaseService
 
         if (filter.From is not null)
         {
-            query = query.Where(p => p.CreatedAtUtc >= filter.From.Value);
+            query = query.Where(p => p.CreatedAtUtc >= filter.From.Value.Date);
         }
 
         if (filter.To is not null)
         {
-            query = query.Where(p => p.CreatedAtUtc < filter.To.Value);
+            var toExclusive = filter.To.Value.Date.AddDays(1);
+            query = query.Where(p => p.CreatedAtUtc < toExclusive);
         }
 
         return await PaginatedList<Purchase>.CreateAsync(
@@ -135,10 +136,8 @@ public class PurchaseService : IPurchaseService
     public async Task<Purchase> UpdateDraftAsync(int id, PurchaseInput input, string actorUserId, CancellationToken cancellationToken = default)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
-        var purchase = await _db.Purchases
-            .Include(p => p.Items)
-            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
-            ?? throw new EntityNotFoundException("Purchase not found.");
+        var purchase = await LockPurchaseAsync(id, cancellationToken);
+        await _db.Entry(purchase).Collection(p => p.Items).LoadAsync(cancellationToken);
 
         if (purchase.Status != PurchaseStatus.Draft)
         {
@@ -272,7 +271,7 @@ public class PurchaseService : IPurchaseService
         }
 
         var items = await _db.PurchaseItems
-            .Include(i => i.Product)
+            .Include(i => i.Product).ThenInclude(p => p.Unit)
             .Where(i => i.PurchaseId == id)
             .OrderBy(i => i.ProductId)
             .ToListAsync(cancellationToken);

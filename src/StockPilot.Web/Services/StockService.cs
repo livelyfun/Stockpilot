@@ -61,12 +61,13 @@ public class StockService : IStockService
 
         if (filter.From is not null)
         {
-            query = query.Where(m => m.CreatedAtUtc >= filter.From.Value);
+            query = query.Where(m => m.CreatedAtUtc >= filter.From.Value.Date);
         }
 
         if (filter.To is not null)
         {
-            query = query.Where(m => m.CreatedAtUtc < filter.To.Value);
+            var toExclusive = filter.To.Value.Date.AddDays(1);
+            query = query.Where(m => m.CreatedAtUtc < toExclusive);
         }
 
         if (!string.IsNullOrWhiteSpace(filter.Search))

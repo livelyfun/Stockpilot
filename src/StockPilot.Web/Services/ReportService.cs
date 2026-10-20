@@ -48,15 +48,29 @@ public class ReportService : IReportService
     public async Task<List<CategoryValuationRow>> GetCategoryValuationAsync(StockReportFilter filter, CancellationToken cancellationToken = default)
     {
         var query = BuildStockQuery(filter);
-        return await query
-            .GroupBy(p => p.Category.Name)
+
+        // Grouping over an optional one-to-one balance navigation does not translate reliably
+        // on all providers, so project the small valuation tuple first and aggregate in memory.
+        var rows = await query
+            .Select(p => new
+            {
+                Category = p.Category.Name,
+                Quantity = p.InventoryBalance == null ? 0m : p.InventoryBalance.QuantityOnHand,
+                Value = p.InventoryBalance == null
+                    ? 0m
+                    : p.InventoryBalance.QuantityOnHand * p.InventoryBalance.AverageCost
+            })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => r.Category)
             .Select(g => new CategoryValuationRow(
                 g.Key,
                 g.Count(),
-                g.Sum(p => p.InventoryBalance!.QuantityOnHand),
-                g.Sum(p => p.InventoryBalance!.QuantityOnHand * p.InventoryBalance!.AverageCost)))
+                g.Sum(r => r.Quantity),
+                g.Sum(r => r.Value)))
             .OrderByDescending(r => r.TotalValue)
-            .ToListAsync(cancellationToken);
+            .ToList();
     }
 
     public async Task<(PaginatedList<PurchaseReportRow> Rows, PurchaseReportSummary Summary)> GetPurchaseReportAsync(

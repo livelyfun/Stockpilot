@@ -727,16 +727,16 @@ namespace StockPilot.Web.Migrations
 
                     b.HasIndex("MovementType", "CreatedAtUtc");
 
-                    b.HasIndex("MovementType", "ReferenceId")
-                        .IsUnique()
-                        .HasDatabaseName("IX_StockMovements_One_Per_Transaction")
-                        .HasFilter("\"ReferenceId\" IS NOT NULL AND \"MovementType\" IN ('PurchaseReceipt','SaleIssue','SaleReversal','PurchaseReversal')");
-
                     b.HasIndex("ProductId", "CreatedAtUtc");
 
                     b.HasIndex("ReferenceType", "ReferenceId");
 
                     b.HasIndex("UserId", "CreatedAtUtc");
+
+                    b.HasIndex("MovementType", "ReferenceId", "ProductId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_StockMovements_One_Per_Transaction")
+                        .HasFilter("\"ReferenceId\" IS NOT NULL AND \"MovementType\" IN ('PurchaseReceipt','SaleIssue','SaleReversal','PurchaseReversal')");
 
                     b.ToTable("StockMovements", t =>
                         {

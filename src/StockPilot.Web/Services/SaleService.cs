@@ -66,12 +66,13 @@ public class SaleService : ISaleService
 
         if (filter.From is not null)
         {
-            query = query.Where(s => s.CreatedAtUtc >= filter.From.Value);
+            query = query.Where(s => s.CreatedAtUtc >= filter.From.Value.Date);
         }
 
         if (filter.To is not null)
         {
-            query = query.Where(s => s.CreatedAtUtc < filter.To.Value);
+            var toExclusive = filter.To.Value.Date.AddDays(1);
+            query = query.Where(s => s.CreatedAtUtc < toExclusive);
         }
 
         return await PaginatedList<Sale>.CreateAsync(
@@ -122,8 +123,8 @@ public class SaleService : ISaleService
     public async Task<Sale> UpdateDraftAsync(int id, SaleInput input, string actorUserId, CancellationToken cancellationToken = default)
     {
         await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
-        var sale = await _db.Sales.Include(s => s.Items).FirstOrDefaultAsync(s => s.Id == id, cancellationToken)
-            ?? throw new EntityNotFoundException("Sale not found.");
+        var sale = await LockSaleAsync(id, cancellationToken);
+        await _db.Entry(sale).Collection(s => s.Items).LoadAsync(cancellationToken);
 
         if (sale.Status != SaleStatus.Draft)
         {

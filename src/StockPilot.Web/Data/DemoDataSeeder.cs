@@ -71,7 +71,6 @@ public static class DemoDataSeeder
         };
 
         var created = new Dictionary<string, int>();
-        var names = new Dictionary<string, string>();
         foreach (var seed in productSeeds)
         {
             var product = await products.CreateAsync(new ProductInput(
@@ -79,7 +78,6 @@ public static class DemoDataSeeder
                 seed.Cost, seed.Sell, seed.Reorder, true), adminUserId, cancellationToken);
 
             created[seed.Sku] = product.Id;
-            names[seed.Sku] = seed.Name;
             await stock.RecordOpeningStockAsync(
                 product.Id, seed.Opening, seed.Cost, "Initial opening stock count", adminUserId, cancellationToken);
         }

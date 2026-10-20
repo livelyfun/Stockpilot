@@ -41,7 +41,7 @@ public class StockMovementConfiguration : IEntityTypeConfiguration<StockMovement
         b.HasIndex(x => new { x.MovementType, x.CreatedAtUtc });
         b.HasIndex(x => new { x.UserId, x.CreatedAtUtc });
         b.HasIndex(x => new { x.ReferenceType, x.ReferenceId });
-        b.HasIndex(x => new { x.MovementType, x.ReferenceId })
+        b.HasIndex(x => new { x.MovementType, x.ReferenceId, x.ProductId })
             .IsUnique()
             .HasDatabaseName("IX_StockMovements_One_Per_Transaction")
             .HasFilter("\"ReferenceId\" IS NOT NULL AND \"MovementType\" IN ('PurchaseReceipt','SaleIssue','SaleReversal','PurchaseReversal')");
