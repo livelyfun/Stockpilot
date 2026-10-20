@@ -1,0 +1,54 @@
+# Local container stack for StockPilot.
+# Copy .env.example to .env, fill in the secrets, then run:
+#   docker compose up --build
+#
+# The web container applies EF Core migrations on startup because
+# Database__AutoMigrate is enabled below.
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-stockpilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-stockpilot}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stockpilot} -d ${POSTGRES_DB:-stockpilot}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      # Exposed for local inspection only; remove this mapping in production.
+      - "55432:5432"
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-stockpilot};Username=${POSTGRES_USER:-stockpilot};Password=${POSTGRES_PASSWORD}"
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+      ASPNETCORE_URLS: http://+:8080
+      # Apply migrations at startup. For zero-downtime deployments, run migrations
+      # as a separate job and set this to false.
+      Database__AutoMigrate: "true"
+      # Never seed demonstration data in production.
+      Seed__DemoData: "false"
+      Seed__AdminEmail: ${Seed__AdminEmail:?set Seed__AdminEmail in .env}
+      Seed__AdminPassword: ${Seed__AdminPassword:?set Seed__AdminPassword in .env}
+      Seed__AdminFullName: ${Seed__AdminFullName:-System Administrator}
+      # Terminate TLS at the platform proxy and forward the scheme instead.
+      HttpsRedirection__Enabled: "false"
+      ForwardedHeaders__Enabled: "true"
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
