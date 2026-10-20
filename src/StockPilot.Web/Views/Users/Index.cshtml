@@ -1,0 +1,109 @@
+@model PaginatedList<UserListItem>
+@{
+    ViewData["Title"] = "Users & roles";
+    var roles = ViewBag.Roles as string[] ?? AppRoles.All;
+    var selectedRole = ViewBag.Role as string;
+    var selectedStatus = ViewBag.Status as string;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Users &amp; roles</h1>
+        <p>Create accounts and assign least-privilege roles. There is no public registration.</p>
+    </div>
+    <div class="page-actions">
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-person-plus me-1" aria-hidden="true"></i> New user</a>
+    </div>
+</div>
+
+<div class="callout section-gap">
+    <i class="bi bi-shield-lock me-1" aria-hidden="true"></i>
+    <strong>Admin</strong> manages users and reversals. <strong>Inventory staff</strong> records purchases, sales and master data.
+    <strong>Viewer</strong> has read-only access to inventory and reports.
+</div>
+
+<form method="get" asp-action="Index" class="card filter-bar section-gap">
+    <div class="filter-grid">
+        <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" name="search" value="@ViewBag.Search" class="form-control" placeholder="Name or email" />
+        </div>
+        <div>
+            <label for="role" class="form-label">Role</label>
+            <select id="role" name="role" class="form-select">
+                <option value="">All roles</option>
+                @foreach (var role in roles)
+                {
+                    <option value="@role" selected="@(selectedRole == role)">@UiHelpers.RoleLabel(role)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All statuses</option>
+                <option value="active" selected="@(selectedStatus == "active")">Active</option>
+                <option value="inactive" selected="@(selectedStatus == "inactive")">Inactive</option>
+            </select>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1" aria-hidden="true"></i> Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card table-card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-people" aria-hidden="true"></i>
+            <h3>No users match this filter</h3>
+            <p>Adjust the filters or create a new account.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>User</th><th>Role</th><th>Status</th><th>Last sign-in</th><th>Created</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="strong">@user.FullName</span>
+                                <span class="table-sub">@user.Email</span>
+                            </td>
+                            <td>
+                                @foreach (var role in user.Roles)
+                                {
+                                    <span class="badge @UiHelpers.RoleClass(role)">@UiHelpers.RoleLabel(role)</span>
+                                }
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge badge-soft-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-soft-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-muted text-small">@UiHelpers.Date(user.LastLoginAtUtc)</td>
+                            <td class="text-muted text-small">@UiHelpers.Date(user.CreatedAtUtc)</td>
+                            <td class="table-actions">
+                                <a asp-action="Edit" asp-route-id="@user.Id" class="btn btn-outline-secondary">Edit</a>
+                                <a asp-action="ResetPassword" asp-route-id="@user.Id" class="btn btn-outline-secondary">Reset password</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model" />
+    }
+</div>

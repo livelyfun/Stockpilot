@@ -1,0 +1,153 @@
+@model Product
+@{
+    ViewData["Title"] = Model.Name;
+    var canManage = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.InventoryStaff);
+    var movements = ViewBag.Movements as PaginatedList<StockMovement> ?? new PaginatedList<StockMovement>([], 0, 1, 10);
+    var balance = Model.InventoryBalance;
+    var quantity = balance?.QuantityOnHand ?? 0;
+    var averageCost = balance?.AverageCost ?? 0;
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Sku</li>
+        </ol></nav>
+        <div class="status-line">
+            <h1 class="mb-0">@Model.Name</h1>
+            @if (Model.IsActive)
+            {
+                <span class="badge badge-soft-success">Active</span>
+            }
+            else
+            {
+                <span class="badge badge-soft-secondary">Inactive</span>
+            }
+        </div>
+        <p class="mono mt-1">@Model.Sku</p>
+    </div>
+    <div class="page-actions">
+        @if (canManage)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil me-1" aria-hidden="true"></i> Edit
+            </a>
+            <form asp-action="ToggleActive" asp-route-id="@Model.Id" method="post" class="inline-form"
+                  data-confirm="@(Model.IsActive ? "Deactivate this product? It will no longer be selectable for new purchases or sales." : "Activate this product?")">
+                <input type="hidden" name="isActive" value="@(!Model.IsActive)" />
+                <button type="submit" class="btn btn-outline-secondary">
+                    @(Model.IsActive ? "Deactivate" : "Activate")
+                </button>
+            </form>
+        }
+        @if (User.IsInRole(AppRoles.Admin))
+        {
+            <a asp-controller="Stock" asp-action="Adjust" asp-route-productId="@Model.Id" class="btn btn-primary">
+                <i class="bi bi-sliders me-1" aria-hidden="true"></i> Adjust stock
+            </a>
+        }
+    </div>
+</div>
+
+<div class="detail-grid section-gap">
+    <div class="stack">
+        <div class="card">
+            <div class="card-header"><h2>Product details</h2></div>
+            <div class="card-body">
+                <dl class="detail-list">
+                    <div><dt>SKU</dt><dd class="mono">@Model.Sku</dd></div>
+                    <div><dt>Category</dt><dd>@Model.Category.Name</dd></div>
+                    <div><dt>Unit</dt><dd>@Model.Unit.Name (@Model.Unit.Code)</dd></div>
+                    <div><dt>Cost price</dt><dd class="money">@UiHelpers.Money(Model.CostPrice)</dd></div>
+                    <div><dt>Selling price</dt><dd class="money">@UiHelpers.Money(Model.SellingPrice)</dd></div>
+                    <div><dt>Reorder level</dt><dd>@UiHelpers.Quantity(Model.ReorderLevel) @Model.Unit.Code</dd></div>
+                    <div><dt>Description</dt><dd>@(string.IsNullOrWhiteSpace(Model.Description) ? "No description provided." : Model.Description)</dd></div>
+                    <div><dt>Created</dt><dd>@UiHelpers.Date(Model.CreatedAtUtc)</dd></div>
+                    <div><dt>Last updated</dt><dd>@UiHelpers.Date(Model.UpdatedAtUtc)</dd></div>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="stack">
+        <div class="card">
+            <div class="card-header"><h2>Stock position</h2></div>
+            <div class="card-body">
+                <div class="stat-label">Quantity on hand</div>
+                <div class="stat-value">
+                    @UiHelpers.Quantity(quantity)
+                    <small class="fs-6 text-muted fw-normal">@Model.Unit.Code</small>
+                </div>
+                <span class="badge @UiHelpers.StockClass(quantity, Model.ReorderLevel)">@UiHelpers.StockLabel(quantity, Model.ReorderLevel)</span>
+
+                <div class="total-panel mt-3">
+                    <div class="total-row"><span>Average cost</span><span class="money">@UiHelpers.Money(averageCost)</span></div>
+                    <div class="total-row"><span>Reorder level</span><span>@UiHelpers.Quantity(Model.ReorderLevel)</span></div>
+                    <div class="total-row grand"><span>Stock value</span><span>@UiHelpers.Money(quantity * averageCost)</span></div>
+                </div>
+                <p class="text-muted text-small mt-3 mb-0">Valued at weighted-average cost, not selling price.</p>
+            </div>
+        </div>
+
+        @if (canManage)
+        {
+            <div class="card">
+                <div class="card-header"><h2>Danger zone</h2></div>
+                <div class="card-body">
+                    <p class="text-small text-muted">Products referenced by transactions cannot be deleted. Deactivate them to preserve history.</p>
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post"
+                          data-confirm="Permanently delete this product? This cannot be undone.">
+                        <button type="submit" class="btn btn-danger-soft">
+                            <i class="bi bi-trash me-1" aria-hidden="true"></i> Delete product
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="card table-card">
+    <div class="card-header">
+        <div>
+            <h2>Recent stock movements</h2>
+            <span class="text-muted text-small">Every quantity change is recorded in the ledger</span>
+        </div>
+        <a asp-controller="Stock" asp-action="Index" asp-route-productId="@Model.Id" class="btn btn-sm btn-outline-secondary">Full history</a>
+    </div>
+    @if (movements.Count == 0)
+    {
+        <div class="empty-state py-4">
+            <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+            <h3>No movements yet</h3>
+            <p>Record opening stock or receive a purchase to add inventory.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Date</th><th>Type</th><th class="num">Change</th><th class="num">Balance</th><th class="num">Unit cost</th><th>Reference</th><th>User</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var movement in movements)
+                    {
+                        <tr>
+                            <td class="text-muted text-small">@UiHelpers.Date(movement.CreatedAtUtc)</td>
+                            <td><span class="badge @UiHelpers.MovementTypeClass(movement.MovementType)">@UiHelpers.MovementTypeLabel(movement.MovementType)</span></td>
+                            <td class="num @(movement.QuantityChange < 0 ? "qty-neg" : "qty-pos")">
+                                @(movement.QuantityChange > 0 ? "+" : "")@UiHelpers.Quantity(movement.QuantityChange)
+                            </td>
+                            <td class="num">@UiHelpers.Quantity(movement.BalanceAfter)</td>
+                            <td class="num">@UiHelpers.Number(movement.UnitCost)</td>
+                            <td class="mono text-small">@(movement.ReferenceNumber ?? "—")</td>
+                            <td class="text-small">@movement.User.UserName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

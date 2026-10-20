@@ -1,0 +1,18 @@
+@model CategoryFormViewModel
+@{
+    ViewData["Title"] = "Edit category";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Categories</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol></nav>
+        <h1>Edit category</h1>
+        <p>Category changes apply immediately to product filters.</p>
+    </div>
+</div>
+<form asp-action="Edit" method="post" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

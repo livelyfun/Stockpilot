@@ -1,0 +1,52 @@
+@model AuditLog
+@{
+    ViewData["Title"] = "Audit entry";
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Audit logs</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Entry @Model.Id</li>
+        </ol></nav>
+        <div class="status-line">
+            <h1 class="mb-0">@Model.Action</h1>
+            <span class="badge badge-soft-primary mono">#@Model.Id</span>
+        </div>
+        <p>@UiHelpers.Date(Model.CreatedAtUtc) · @Model.UserName</p>
+    </div>
+</div>
+
+<div class="detail-grid section-gap">
+    <div class="card">
+        <div class="card-header"><h2>Details</h2></div>
+        <div class="card-body">
+            @if (string.IsNullOrWhiteSpace(Model.Details))
+            {
+                <p class="text-muted mb-0">No additional details were recorded.</p>
+            }
+            else
+            {
+                <pre class="audit-details">@Model.Details</pre>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2>Entry metadata</h2></div>
+        <div class="card-body">
+            <dl class="detail-list">
+                <div><dt>Entry</dt><dd class="mono">@Model.Id</dd></div>
+                <div><dt>Recorded</dt><dd>@UiHelpers.Date(Model.CreatedAtUtc)</dd></div>
+                <div><dt>User</dt><dd>@Model.UserName</dd></div>
+                <div><dt>User ID</dt><dd class="mono text-small">@(string.IsNullOrWhiteSpace(Model.UserId) ? "—" : Model.UserId)</dd></div>
+                <div><dt>Action</dt><dd>@Model.Action</dd></div>
+                <div><dt>Entity type</dt><dd class="mono">@Model.EntityType</dd></div>
+                <div><dt>Entity ID</dt><dd class="mono">@(string.IsNullOrWhiteSpace(Model.EntityId) ? "—" : Model.EntityId)</dd></div>
+                <div><dt>IP address</dt><dd class="mono">@(string.IsNullOrWhiteSpace(Model.IpAddress) ? "—" : Model.IpAddress)</dd></div>
+            </dl>
+        </div>
+    </div>
+</div>
+
+<a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to audit logs</a>

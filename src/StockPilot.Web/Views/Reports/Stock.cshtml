@@ -1,0 +1,209 @@
+@model StockReportPageViewModel
+@{
+    ViewData["Title"] = Model.Title;
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "Stock";
+    var exportAction = Model.IsValuation ? "ExportValuation"
+        : Model.Filter.StockStatus == "low" ? "ExportLowStock"
+        : Model.Filter.StockStatus == "out" ? "ExportOutOfStock"
+        : "ExportStock";
+    var summary = Model.Page.Summary;
+    var selectedCategory = Model.Filter.CategoryId?.ToString();
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Reports</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+        </ol></nav>
+        <h1>@Model.Title</h1>
+        <p>@Model.Description</p>
+    </div>
+    <div class="page-actions">
+        <a asp-action="@exportAction"
+           asp-route-search="@Model.Filter.Search"
+           asp-route-categoryId="@Model.Filter.CategoryId"
+           asp-route-stockStatus="@Model.Filter.StockStatus"
+           asp-route-includeInactive="@Model.Filter.IncludeInactive"
+           asp-route-sort="@Model.Filter.Sort"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-download me-1" aria-hidden="true"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid stat-grid-four section-gap">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Products</div>
+                <div class="stat-value">@summary.ProductCount</div>
+                <div class="stat-meta">Matching current filters</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-box" aria-hidden="true"></i></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Low stock</div>
+                <div class="stat-value">@summary.LowStockCount</div>
+                <div class="stat-meta">At or below reorder level</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Out of stock</div>
+                <div class="stat-value">@summary.OutOfStockCount</div>
+                <div class="stat-meta">No available quantity</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-slash-circle" aria-hidden="true"></i></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Stock value</div>
+                <div class="stat-value">@UiHelpers.Money(summary.TotalValue)</div>
+                <div class="stat-meta">@UiHelpers.Quantity(summary.TotalQuantity) units total</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+        </div>
+    </div>
+</div>
+
+<form method="get" asp-action="@action" class="card filter-bar section-gap">
+    <div class="filter-grid">
+        <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" name="search" value="@Model.Filter.Search" class="form-control" placeholder="SKU or product name" />
+        </div>
+        <div>
+            <label for="categoryId" class="form-label">Category</label>
+            <select id="categoryId" name="categoryId" class="form-select">
+                <option value="">All categories</option>
+                @foreach (var category in Model.Categories)
+                {
+                    <option value="@category.Value" selected="@(category.Value == selectedCategory)">@category.Text</option>
+                }
+            </select>
+        </div>
+        @if (!Model.IsValuation && Model.Filter.StockStatus is null)
+        {
+            <div>
+                <label for="stockStatus" class="form-label">Stock status</label>
+                <select id="stockStatus" name="stockStatus" class="form-select">
+                    <option value="">All statuses</option>
+                    <option value="in" selected="@(Model.Filter.StockStatus == "in")">In stock</option>
+                    <option value="low" selected="@(Model.Filter.StockStatus == "low")">Low stock</option>
+                    <option value="out" selected="@(Model.Filter.StockStatus == "out")">Out of stock</option>
+                </select>
+            </div>
+        }
+        <div>
+            <label for="sort" class="form-label">Sort by</label>
+            <select id="sort" name="sort" class="form-select">
+                <option value="">Product name</option>
+                <option value="sku" selected="@(Model.Filter.Sort == "sku")">SKU</option>
+                <option value="category" selected="@(Model.Filter.Sort == "category")">Category</option>
+                <option value="quantity" selected="@(Model.Filter.Sort == "quantity")">Quantity</option>
+                <option value="value" selected="@(Model.Filter.Sort == "value")">Stock value</option>
+            </select>
+        </div>
+        <div class="filter-check">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="includeInactive" name="includeInactive"
+                       value="true" checked="@Model.Filter.IncludeInactive" />
+                <label class="form-check-label" for="includeInactive">Include inactive products</label>
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1" aria-hidden="true"></i> Filter</button>
+            <a asp-action="@action" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+@if (Model.IsValuation && Model.CategoryValuation.Count > 0)
+{
+    <div class="card table-card section-gap">
+        <div class="card-header">
+            <div>
+                <h2>Valuation by category</h2>
+                <span class="text-muted text-small">Weighted-average cost of on-hand stock</span>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr><th>Category</th><th class="num">Products</th><th class="num">Quantity</th><th class="num">Value</th></tr></thead>
+                <tbody>
+                    @foreach (var row in Model.CategoryValuation)
+                    {
+                        <tr>
+                            <td class="strong">@row.Category</td>
+                            <td class="num">@row.ProductCount</td>
+                            <td class="num">@UiHelpers.Quantity(row.TotalQuantity)</td>
+                            <td class="num money">@UiHelpers.Money(row.TotalValue)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<div class="card table-card">
+    @if (Model.Page.Rows.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-box-seam" aria-hidden="true"></i>
+            <h3>No products match this report</h3>
+            <p>Adjust the filters or add products and stock to see results.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th class="num">On hand</th>
+                        <th class="num">Reorder level</th>
+                        <th class="num">Average cost</th>
+                        <th class="num">Stock value</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Page.Rows)
+                    {
+                        <tr>
+                            <td>
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@row.ProductId" class="strong link-quiet">@row.Name</a>
+                                <span class="table-sub mono">@row.Sku</span>
+                            </td>
+                            <td>@row.Category</td>
+                            <td class="num">@UiHelpers.Quantity(row.Quantity) <span class="text-muted">@row.UnitCode</span></td>
+                            <td class="num">@UiHelpers.Quantity(row.ReorderLevel)</td>
+                            <td class="num">@UiHelpers.Money(row.AverageCost)</td>
+                            <td class="num money">@UiHelpers.Money(row.StockValue)</td>
+                            <td>
+                                <span class="badge @UiHelpers.StockClass(row.Quantity, row.ReorderLevel)">@row.StockStatus</span>
+                                @if (!row.IsActive)
+                                {
+                                    <span class="badge badge-soft-secondary">Inactive</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model.Page.Rows" />
+    }
+</div>

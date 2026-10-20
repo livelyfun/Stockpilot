@@ -1,0 +1,146 @@
+@model PurchaseReportPageViewModel
+@{
+    ViewData["Title"] = "Purchase report";
+    var filter = Model.Filter;
+    var selectedSupplier = filter.SupplierId?.ToString();
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Reports</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Purchases</li>
+        </ol></nav>
+        <h1>Purchase report</h1>
+        <p>Supplier receipts and spend. Totals include drafts separately from received stock.</p>
+    </div>
+    <div class="page-actions">
+        <a asp-action="ExportPurchases"
+           asp-route-search="@filter.Search" asp-route-supplierId="@filter.SupplierId"
+           asp-route-status="@filter.Status"
+           asp-route-from="@filter.From?.ToString("yyyy-MM-dd")" asp-route-to="@filter.To?.ToString("yyyy-MM-dd")"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-download me-1" aria-hidden="true"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid stat-grid-four section-gap">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Documents</div>
+                <div class="stat-value">@Model.Summary.DocumentCount</div>
+                <div class="stat-meta">Matching current filters</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-cart" aria-hidden="true"></i></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Received</div>
+                <div class="stat-value">@Model.Summary.ReceivedCount</div>
+                <div class="stat-meta">@UiHelpers.Money(Model.Summary.ReceivedTotal) received value</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-check-circle" aria-hidden="true"></i></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Draft</div>
+                <div class="stat-value">@Model.Summary.DraftCount</div>
+                <div class="stat-meta">Awaiting receipt</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-pencil-square" aria-hidden="true"></i></span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Cancelled / reversed</div>
+                <div class="stat-value">@(Model.Summary.CancelledCount + Model.Summary.ReversedCount)</div>
+                <div class="stat-meta">@Model.Summary.ReversedCount reversed receipts</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i></span>
+        </div>
+    </div>
+</div>
+
+<form method="get" asp-action="Purchases" class="card filter-bar section-gap">
+    <div class="filter-grid">
+        <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" name="search" value="@filter.Search" class="form-control" placeholder="PO number or supplier" />
+        </div>
+        <div>
+            <label for="supplierId" class="form-label">Supplier</label>
+            <select id="supplierId" name="supplierId" class="form-select">
+                <option value="">All suppliers</option>
+                @foreach (var supplier in Model.Suppliers)
+                {
+                    <option value="@supplier.Value" selected="@(supplier.Value == selectedSupplier)">@supplier.Text</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All statuses</option>
+                @foreach (var status in Enum.GetValues<PurchaseStatus>())
+                {
+                    <option value="@status" selected="@(filter.Status == status)">@status</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="from" class="form-label">From</label>
+            <input id="from" type="date" name="from" value="@filter.From?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div>
+            <label for="to" class="form-label">To</label>
+            <input id="to" type="date" name="to" value="@filter.To?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1" aria-hidden="true"></i> Filter</button>
+            <a asp-action="Purchases" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card table-card">
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-cart" aria-hidden="true"></i>
+            <h3>No purchases match this report</h3>
+            <p>Adjust the filters or create a purchase to see results.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Purchase</th><th>Supplier</th><th>Status</th><th class="num">Lines</th><th class="num">Total</th><th>Created</th><th>Received</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td><a asp-controller="Purchases" asp-action="Details" asp-route-id="@row.Id" class="strong mono">@row.Number</a></td>
+                            <td>@row.Supplier</td>
+                            <td><span class="badge @UiHelpers.PurchaseStatusClass(row.Status)">@row.Status</span></td>
+                            <td class="num">@row.LineCount</td>
+                            <td class="num money">@UiHelpers.Money(row.TotalAmount)</td>
+                            <td class="text-muted text-small">@UiHelpers.Date(row.CreatedAtUtc)</td>
+                            <td class="text-muted text-small">@UiHelpers.Date(row.ReceivedAtUtc)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model.Rows" />
+    }
+</div>

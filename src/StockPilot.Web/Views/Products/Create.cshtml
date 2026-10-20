@@ -1,0 +1,22 @@
+@model ProductFormViewModel
+@{
+    ViewData["Title"] = "New product";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol></nav>
+        <h1>Create product</h1>
+        <p>Add a stock-keeping unit to the catalogue. Opening quantities are recorded separately.</p>
+    </div>
+</div>
+
+<form asp-action="Create" method="post" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

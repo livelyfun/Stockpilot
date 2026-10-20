@@ -1,0 +1,22 @@
+@model ProductFormViewModel
+@{
+    ViewData["Title"] = "Edit product";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Products</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol></nav>
+        <h1>Edit product</h1>
+        <p>Update master data. Inventory quantities are only changed through stock movements.</p>
+    </div>
+</div>
+
+<form asp-action="Edit" method="post" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

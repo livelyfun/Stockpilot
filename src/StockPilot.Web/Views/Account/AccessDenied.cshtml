@@ -1,0 +1,15 @@
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Access denied";
+}
+
+<div class="card">
+    <div class="card-body empty-state">
+        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+        <h3>You do not have access to this area</h3>
+        <p>Your role does not permit this action. If you believe this is a mistake, contact an administrator.</p>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-3">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to dashboard
+        </a>
+    </div>
+</div>

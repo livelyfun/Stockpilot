@@ -1,0 +1,98 @@
+@model PaginatedList<Purchase>
+@{
+    ViewData["Title"] = "Purchases";
+    var canManage = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.InventoryStaff);
+    var suppliers = ViewBag.Suppliers as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [];
+    var selectedStatus = ViewBag.Status as PurchaseStatus?;
+    var selectedSupplier = ViewBag.SupplierId as int?;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Purchases</h1>
+        <p>Draft, receive and audit supplier stock receipts.</p>
+    </div>
+    @if (canManage)
+    {
+        <div class="page-actions">
+            <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i> New purchase</a>
+        </div>
+    }
+</div>
+
+<form method="get" asp-action="Index" class="card filter-bar section-gap">
+    <div class="filter-grid">
+        <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" name="search" value="@ViewBag.Search" class="form-control" placeholder="PO number or supplier" />
+        </div>
+        <div>
+            <label for="status" class="form-label">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All statuses</option>
+                @foreach (var status in Enum.GetValues<PurchaseStatus>())
+                {
+                    <option value="@status" selected="@(selectedStatus == status)">@status</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="supplierId" class="form-label">Supplier</label>
+            <select id="supplierId" name="supplierId" class="form-select">
+                <option value="">All suppliers</option>
+                @foreach (var supplier in suppliers)
+                {
+                    <option value="@supplier.Value" selected="@(supplier.Value == selectedSupplier?.ToString())">@supplier.Text</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="from" class="form-label">From</label>
+            <input id="from" type="date" name="from" value="@ViewBag.From" class="form-control" />
+        </div>
+        <div>
+            <label for="to" class="form-label">To</label>
+            <input id="to" type="date" name="to" value="@ViewBag.To" class="form-control" />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1" aria-hidden="true"></i> Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card table-card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-cart" aria-hidden="true"></i>
+            <h3>No purchases found</h3>
+            <p>Create a draft purchase to record incoming stock.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr><th>Purchase</th><th>Supplier</th><th>Created</th><th>Received</th><th>Status</th><th class="num">Total</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var purchase in Model)
+                    {
+                        <tr>
+                            <td><a asp-action="Details" asp-route-id="@purchase.Id" class="strong">@purchase.PurchaseNumber</a></td>
+                            <td>@purchase.Supplier.BusinessName</td>
+                            <td class="text-muted text-small">@UiHelpers.Date(purchase.CreatedAtUtc)</td>
+                            <td class="text-muted text-small">@UiHelpers.Date(purchase.ReceivedAtUtc)</td>
+                            <td><span class="badge @UiHelpers.PurchaseStatusClass(purchase.Status)">@purchase.Status</span></td>
+                            <td class="num">@UiHelpers.Money(purchase.TotalAmount)</td>
+                            <td class="table-actions">
+                                <a asp-action="Details" asp-route-id="@purchase.Id" class="btn btn-outline-secondary">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model" />
+    }
+</div>

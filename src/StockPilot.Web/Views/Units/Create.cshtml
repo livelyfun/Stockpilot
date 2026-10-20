@@ -1,0 +1,18 @@
+@model UnitFormViewModel
+@{
+    ViewData["Title"] = "New unit";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Units</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol></nav>
+        <h1>Create unit</h1>
+        <p>Units define how quantities are counted and displayed.</p>
+    </div>
+</div>
+<form asp-action="Create" method="post" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

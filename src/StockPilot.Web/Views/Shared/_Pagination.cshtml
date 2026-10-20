@@ -1,0 +1,53 @@
+@model StockPilot.Web.Infrastructure.IPaginatedMetadata
+@using Microsoft.AspNetCore.WebUtilities
+@{
+    var query = Context.Request.Query.ToDictionary(x => x.Key, x => (string?)x.Value.ToString());
+    string PageUrl(int page)
+    {
+        query["page"] = page.ToString();
+        return QueryHelpers.AddQueryString(Context.Request.Path, query);
+    }
+    var start = Math.Max(1, Model.PageIndex - 2);
+    var end = Math.Min(Model.TotalPages, start + 4);
+    start = Math.Max(1, end - 4);
+}
+
+<div class="table-footer">
+    <div class="table-count">
+        @if (Model.TotalCount == 0)
+        {
+            <span>No records</span>
+        }
+        else
+        {
+            <span>Showing <strong>@Model.FirstItemIndex–@Model.LastItemIndex</strong> of <strong>@Model.TotalCount</strong></span>
+        }
+    </div>
+
+    @if (Model.TotalPages > 1)
+    {
+        <nav aria-label="Pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link" href="@(Model.HasPreviousPage ? PageUrl(Model.PageIndex - 1) : "#")"
+                       aria-label="Previous page" tabindex="@(Model.HasPreviousPage ? 0 : -1)">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    </a>
+                </li>
+                @for (var page = start; page <= end; page++)
+                {
+                    <li class="page-item @(page == Model.PageIndex ? "active" : "")">
+                        <a class="page-link" href="@PageUrl(page)"
+                           aria-label="Page @(page)" aria-current="@(page == Model.PageIndex ? "page" : null)">@(page)</a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link" href="@(Model.HasNextPage ? PageUrl(Model.PageIndex + 1) : "#")"
+                       aria-label="Next page" tabindex="@(Model.HasNextPage ? 0 : -1)">
+                        <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    }
+</div>

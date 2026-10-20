@@ -3,48 +3,152 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - StockPilot.Web</title>
-    <script type="importmap"></script>
+    <meta name="description" content="StockPilot inventory and stock management" />
+    <title>@ViewData["Title"] · StockPilot</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/StockPilot.Web.styles.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">StockPilot.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+<body class="app-body">
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <div class="offcanvas-lg offcanvas-start app-sidebar" tabindex="-1" id="appSidebar" aria-labelledby="appSidebarLabel">
+        <div class="sidebar-brand">
+            <a asp-controller="Home" asp-action="Index" class="brand-link" aria-label="StockPilot dashboard">
+                <span class="brand-mark"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                <span>
+                    <strong id="appSidebarLabel">StockPilot</strong>
+                    <small>Inventory control</small>
+                </span>
+            </a>
+            <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas"
+                    data-bs-target="#appSidebar" aria-label="Close navigation"></button>
+        </div>
+
+        <nav class="sidebar-nav" aria-label="Main navigation">
+            <div class="nav-section">Overview</div>
+            <a class="nav-item @Active("Home")" asp-controller="Home" asp-action="Index">
+                <i class="bi bi-grid-1x2" aria-hidden="true"></i><span>Dashboard</span>
+            </a>
+
+            <div class="nav-section">Inventory</div>
+            <a class="nav-item @Active("Products")" asp-controller="Products" asp-action="Index">
+                <i class="bi bi-box" aria-hidden="true"></i><span>Products</span>
+            </a>
+            <a class="nav-item @Active("Categories")" asp-controller="Categories" asp-action="Index">
+                <i class="bi bi-tags" aria-hidden="true"></i><span>Categories</span>
+            </a>
+            <a class="nav-item @Active("Units")" asp-controller="Units" asp-action="Index">
+                <i class="bi bi-rulers" aria-hidden="true"></i><span>Units</span>
+            </a>
+            <a class="nav-item @Active("Stock")" asp-controller="Stock" asp-action="Index">
+                <i class="bi bi-arrow-left-right" aria-hidden="true"></i><span>Stock movements</span>
+            </a>
+
+            <div class="nav-section">Operations</div>
+            <a class="nav-item @Active("Purchases")" asp-controller="Purchases" asp-action="Index">
+                <i class="bi bi-cart-plus" aria-hidden="true"></i><span>Purchases</span>
+            </a>
+            <a class="nav-item @Active("Sales")" asp-controller="Sales" asp-action="Index">
+                <i class="bi bi-receipt" aria-hidden="true"></i><span>Sales</span>
+            </a>
+            <a class="nav-item @Active("Suppliers")" asp-controller="Suppliers" asp-action="Index">
+                <i class="bi bi-truck" aria-hidden="true"></i><span>Suppliers</span>
+            </a>
+
+            <div class="nav-section">Insights</div>
+            <a class="nav-item @Active("Reports")" asp-controller="Reports" asp-action="Index">
+                <i class="bi bi-bar-chart-line" aria-hidden="true"></i><span>Reports</span>
+            </a>
+
+            @if (User.IsInRole("Admin"))
+            {
+                <div class="nav-section">Administration</div>
+                <a class="nav-item @Active("Users")" asp-controller="Users" asp-action="Index">
+                    <i class="bi bi-people" aria-hidden="true"></i><span>Users &amp; roles</span>
+                </a>
+                <a class="nav-item @Active("AuditLogs")" asp-controller="AuditLogs" asp-action="Index">
+                    <i class="bi bi-shield-check" aria-hidden="true"></i><span>Audit logs</span>
+                </a>
+            }
+        </nav>
+
+        <div class="sidebar-footer">
+            <span class="status-dot"></span>
+            <span>Operational</span>
+            <span class="ms-auto text-white-50">v1.0</span>
+        </div>
+    </div>
+
+    <div class="app-main">
+        <header class="app-header">
+            <button class="btn btn-icon d-lg-none" type="button" data-bs-toggle="offcanvas"
+                    data-bs-target="#appSidebar" aria-controls="appSidebar" aria-label="Open navigation">
+                <i class="bi bi-list" aria-hidden="true"></i>
+            </button>
+
+            <div class="header-title d-none d-md-block">
+                <span class="eyebrow">Inventory workspace</span>
+                <h1>@ViewData["Title"]</h1>
+            </div>
+
+            <div class="header-actions">
+                <a class="btn btn-sm btn-outline-secondary d-none d-sm-inline-flex" asp-controller="Reports" asp-action="Index">
+                    <i class="bi bi-graph-up-arrow" aria-hidden="true"></i> Reports
+                </a>
+                <div class="dropdown">
+                    <button class="user-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="avatar" aria-hidden="true">@(User.GetDisplayName().Length > 0 ? User.GetDisplayName()[..1].ToUpperInvariant() : "?")</span>
+                        <span class="user-copy">
+                            <strong>@User.GetDisplayName()</strong>
+                            <small>@(User.IsInRole("Admin") ? "Administrator" : User.IsInRole("InventoryStaff") ? "Inventory staff" : "Viewer")</small>
+                        </span>
+                        <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li><span class="dropdown-item-text small text-muted">Signed in as<br /><strong>@User.GetUserName()</strong></span></li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                            <form asp-controller="Account" asp-action="Logout" method="post" data-confirm="Sign out of StockPilot?">
+                                <button type="submit" class="dropdown-item">
+                                    <i class="bi bi-box-arrow-right me-2" aria-hidden="true"></i>Sign out
+                                </button>
+                            </form>
                         </li>
                     </ul>
                 </div>
             </div>
-        </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+        </header>
+
+        <main id="main-content" class="app-content" tabindex="-1">
+            @if (ViewData["Title"] is not null)
+            {
+                <div class="page-heading d-md-none">
+                    <h1>@ViewData["Title"]</h1>
+                </div>
+            }
+            <partial name="_FlashMessages" />
             @RenderBody()
         </main>
+
+        <footer class="app-footer">
+            <span>&copy; @DateTime.UtcNow.Year StockPilot</span>
+            <span class="text-muted">Weighted-average inventory valuation · Times shown in UTC</span>
+        </footer>
     </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - StockPilot.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
+@functions {
+    private string Active(string controller)
+    {
+        var current = ViewContext.RouteData.Values["controller"]?.ToString();
+        return string.Equals(current, controller, StringComparison.OrdinalIgnoreCase) ? "active" : string.Empty;
+    }
+}

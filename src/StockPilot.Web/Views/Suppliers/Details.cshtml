@@ -1,0 +1,120 @@
+@model Supplier
+@{
+    ViewData["Title"] = Model.BusinessName;
+    var canManage = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.InventoryStaff);
+    var purchases = Model.Purchases.OrderByDescending(p => p.CreatedAtUtc).ToList();
+    var totalSpend = purchases.Where(p => p.Status == PurchaseStatus.Received).Sum(p => p.TotalAmount);
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Suppliers</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.BusinessName</li>
+        </ol></nav>
+        <div class="status-line">
+            <h1 class="mb-0">@Model.BusinessName</h1>
+            @if (Model.IsActive)
+            {
+                <span class="badge badge-soft-success">Active</span>
+            }
+            else
+            {
+                <span class="badge badge-soft-secondary">Inactive</span>
+            }
+        </div>
+        <p>@(Model.ContactPerson ?? "No contact person on file")</p>
+    </div>
+    @if (canManage)
+    {
+        <div class="page-actions">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil me-1" aria-hidden="true"></i> Edit
+            </a>
+            <form asp-action="ToggleActive" asp-route-id="@Model.Id" method="post" class="inline-form"
+                  data-confirm="@(Model.IsActive ? "Deactivate this supplier?" : "Activate this supplier?")">
+                <input type="hidden" name="isActive" value="@(!Model.IsActive)" />
+                <button type="submit" class="btn btn-outline-secondary">@(Model.IsActive ? "Deactivate" : "Activate")</button>
+            </form>
+            <a asp-controller="Purchases" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-cart-plus me-1" aria-hidden="true"></i> New purchase
+            </a>
+        </div>
+    }
+</div>
+
+<div class="detail-grid section-gap">
+    <div class="card">
+        <div class="card-header"><h2>Supplier information</h2></div>
+        <div class="card-body">
+            <dl class="detail-list">
+                <div><dt>Contact person</dt><dd>@(Model.ContactPerson ?? "—")</dd></div>
+                <div><dt>Phone</dt><dd>@(Model.Phone ?? "—")</dd></div>
+                <div><dt>Email</dt><dd>@(Model.Email ?? "—")</dd></div>
+                <div><dt>Address</dt><dd>@(Model.Address ?? "—")</dd></div>
+                <div><dt>Notes</dt><dd>@(Model.Notes ?? "No notes.")</dd></div>
+                <div><dt>Added</dt><dd>@UiHelpers.Date(Model.CreatedAtUtc)</dd></div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h2>Purchase summary</h2></div>
+        <div class="card-body">
+            <div class="stat-label">Total received spend</div>
+            <div class="stat-value">@UiHelpers.Money(totalSpend)</div>
+            <div class="table-sub">@purchases.Count(p => p.Status == PurchaseStatus.Received) received purchase(s)</div>
+            <div class="total-panel mt-3">
+                <div class="total-row"><span>All documents</span><span>@purchases.Count</span></div>
+                <div class="total-row"><span>Draft</span><span>@purchases.Count(p => p.Status == PurchaseStatus.Draft)</span></div>
+                <div class="total-row"><span>Reversed</span><span>@purchases.Count(p => p.Status == PurchaseStatus.Reversed)</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card table-card section-gap">
+    <div class="card-header"><h2>Purchase history</h2></div>
+    @if (purchases.Count == 0)
+    {
+        <div class="empty-state py-4">
+            <i class="bi bi-cart" aria-hidden="true"></i>
+            <h3>No purchases yet</h3>
+            <p>Create a purchase from this supplier to see it here.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr><th>Purchase</th><th>Created</th><th>Received</th><th>Status</th><th class="num">Total</th></tr></thead>
+                <tbody>
+                    @foreach (var purchase in purchases)
+                    {
+                        <tr>
+                            <td><a asp-controller="Purchases" asp-action="Details" asp-route-id="@purchase.Id" class="strong">@purchase.PurchaseNumber</a></td>
+                            <td class="text-muted text-small">@UiHelpers.Date(purchase.CreatedAtUtc)</td>
+                            <td class="text-muted text-small">@UiHelpers.Date(purchase.ReceivedAtUtc)</td>
+                            <td><span class="badge @UiHelpers.PurchaseStatusClass(purchase.Status)">@purchase.Status</span></td>
+                            <td class="num">@UiHelpers.Money(purchase.TotalAmount)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (canManage)
+{
+    <div class="card">
+        <div class="card-header"><h2>Danger zone</h2></div>
+        <div class="card-body">
+            <p class="text-small text-muted">Suppliers with purchase history cannot be deleted. Deactivate them instead.</p>
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post"
+                  data-confirm="Permanently delete this supplier? This only works when no purchases reference it.">
+                <button type="submit" class="btn btn-danger-soft"><i class="bi bi-trash me-1" aria-hidden="true"></i> Delete supplier</button>
+            </form>
+        </div>
+    </div>
+}

@@ -1,0 +1,43 @@
+@model LoginViewModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Sign in";
+}
+
+<h2>Welcome back</h2>
+<p class="auth-sub">Sign in to manage inventory, purchases and sales.</p>
+
+<div class="auth-card">
+    <form asp-action="Login" method="post" novalidate>
+        <input type="hidden" asp-for="ReturnUrl" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small" role="alert"></div>
+
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" autocomplete="username" autofocus
+                   placeholder="you@example.com" />
+            <span asp-validation-for="Email" class="field-validation-error"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-control" autocomplete="current-password" placeholder="Your password" />
+            <span asp-validation-for="Password" class="field-validation-error"></span>
+        </div>
+
+        <div class="form-check mb-4">
+            <input asp-for="RememberMe" class="form-check-input" />
+            <label asp-for="RememberMe" class="form-check-label small"></label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2" data-loading-label="Signing in…">
+            <i class="bi bi-box-arrow-in-right me-1" aria-hidden="true"></i> Sign in
+        </button>
+    </form>
+</div>
+
+<p class="auth-footer-note">Authorized access only. Contact an administrator if you need an account.</p>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

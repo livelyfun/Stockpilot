@@ -20,6 +20,7 @@ public interface ISupplierService
     Task<PaginatedList<Supplier>> GetPagedAsync(string? search, bool includeInactive, int page, int pageSize, CancellationToken cancellationToken = default);
     Task<Supplier?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<Supplier?> GetWithPurchaseHistoryAsync(int id, CancellationToken cancellationToken = default);
+    Task<List<Supplier>> GetActiveAsync(CancellationToken cancellationToken = default);
     Task<Supplier> CreateAsync(SupplierInput input, string actorUserId, CancellationToken cancellationToken = default);
     Task<Supplier> UpdateAsync(int id, SupplierInput input, string actorUserId, CancellationToken cancellationToken = default);
     Task SetActiveAsync(int id, bool isActive, string actorUserId, CancellationToken cancellationToken = default);
@@ -65,6 +66,12 @@ public class SupplierService : ISupplierService
             .AsNoTracking()
             .Include(s => s.Purchases.OrderByDescending(p => p.CreatedAtUtc))
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+
+    public Task<List<Supplier>> GetActiveAsync(CancellationToken cancellationToken = default) =>
+        _db.Suppliers.AsNoTracking()
+            .Where(s => s.IsActive)
+            .OrderBy(s => s.BusinessName)
+            .ToListAsync(cancellationToken);
 
     public async Task<Supplier> CreateAsync(SupplierInput input, string actorUserId, CancellationToken cancellationToken = default)
     {

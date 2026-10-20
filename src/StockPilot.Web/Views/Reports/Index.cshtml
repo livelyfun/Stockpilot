@@ -1,0 +1,137 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="page-header">
+    <div>
+        <h1>Reports</h1>
+        <p>Operational reports built from the stock ledger. Every report can be exported to CSV.</p>
+    </div>
+    <div class="page-actions">
+        <a asp-controller="Reports" asp-action="Valuation" class="btn btn-outline-secondary">
+            <i class="bi bi-calculator me-1" aria-hidden="true"></i> Valuation
+        </a>
+        <a asp-controller="Reports" asp-action="Movements" class="btn btn-primary">
+            <i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i> Stock ledger
+        </a>
+    </div>
+</div>
+
+<div class="stat-grid section-gap">
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Inventory value</div>
+                <div class="stat-value">@UiHelpers.Money(Model.InventoryValue)</div>
+                <div class="stat-meta">Weighted-average cost</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+        </div>
+    </div>
+    <a class="stat-card link-quiet" asp-action="LowStock">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Low stock</div>
+                <div class="stat-value">@Model.LowStockCount</div>
+                <div class="stat-meta">At or below reorder level</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+        </div>
+    </a>
+    <a class="stat-card link-quiet" asp-action="OutOfStock">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Out of stock</div>
+                <div class="stat-value">@Model.OutOfStockCount</div>
+                <div class="stat-meta">No available quantity</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-slash-circle" aria-hidden="true"></i></span>
+        </div>
+    </a>
+    <div class="stat-card">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Active products</div>
+                <div class="stat-value">@Model.ActiveProducts</div>
+                <div class="stat-meta">@Model.ActiveCategories categories</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-box" aria-hidden="true"></i></span>
+        </div>
+    </div>
+</div>
+
+<div class="report-grid section-gap">
+    <a class="report-card" asp-action="Stock">
+        <span class="stat-icon"><i class="bi bi-boxes" aria-hidden="true"></i></span>
+        <h2>Current stock</h2>
+        <p>Live quantity, reorder level and stock value for every product.</p>
+        <span class="report-link">Open report <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+    </a>
+    <a class="report-card" asp-action="LowStock">
+        <span class="stat-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+        <h2>Low stock</h2>
+        <p>Products at or below their reorder level, ready for replenishment.</p>
+        <span class="report-link">Open report <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+    </a>
+    <a class="report-card" asp-action="OutOfStock">
+        <span class="stat-icon"><i class="bi bi-slash-circle" aria-hidden="true"></i></span>
+        <h2>Out of stock</h2>
+        <p>Products with no available quantity across all categories.</p>
+        <span class="report-link">Open report <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+    </a>
+    <a class="report-card" asp-action="Valuation">
+        <span class="stat-icon"><i class="bi bi-calculator" aria-hidden="true"></i></span>
+        <h2>Inventory valuation</h2>
+        <p>Stock value by product and category using weighted-average cost.</p>
+        <span class="report-link">Open report <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+    </a>
+    <a class="report-card" asp-action="Purchases">
+        <span class="stat-icon"><i class="bi bi-cart-plus" aria-hidden="true"></i></span>
+        <h2>Purchase report</h2>
+        <p>Receipt status, supplier spend and document totals over time.</p>
+        <span class="report-link">Open report <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+    </a>
+    <a class="report-card" asp-action="Sales">
+        <span class="stat-icon"><i class="bi bi-receipt" aria-hidden="true"></i></span>
+        <h2>Sales report</h2>
+        <p>Completed revenue, drafts and reversals with document detail.</p>
+        <span class="report-link">Open report <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+    </a>
+    <a class="report-card" asp-action="Movements">
+        <span class="stat-icon"><i class="bi bi-arrow-left-right" aria-hidden="true"></i></span>
+        <h2>Stock ledger</h2>
+        <p>Every movement with quantity, balance, cost and responsible user.</p>
+        <span class="report-link">Open report <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+    </a>
+</div>
+
+<div class="card section-gap">
+    <div class="card-header">
+        <div>
+            <h2>Period performance</h2>
+            <span class="text-muted text-small">Last 30 days · completed documents only</span>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary">Dashboard</a>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-label">Sales revenue</div>
+                <div class="fs-5 fw-semibold money">@UiHelpers.Money(Model.PeriodSalesTotal)</div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-label">Cost of goods sold</div>
+                <div class="fs-5 fw-semibold money">@UiHelpers.Money(Model.PeriodCostOfGoodsSold)</div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-label">Purchase spend</div>
+                <div class="fs-5 fw-semibold money">@UiHelpers.Money(Model.PeriodPurchaseTotal)</div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="stat-label">Gross margin</div>
+                <div class="fs-5 fw-semibold money">@UiHelpers.Money(Model.PeriodGrossMargin)</div>
+            </div>
+        </div>
+    </div>
+</div>

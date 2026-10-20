@@ -1,0 +1,72 @@
+@model CreateUserViewModel
+@{
+    ViewData["Title"] = "New user";
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Users</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol></nav>
+        <h1>New user</h1>
+        <p>Create an account and assign a role. Share the initial password securely and ask the user to change it.</p>
+    </div>
+</div>
+
+<form asp-action="Create" method="post" class="form-narrow" novalidate>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small" role="alert"></div>
+
+    <div class="card form-card">
+        <div class="form-section">
+            <div class="form-section-title">Account</div>
+
+            <div class="mb-3">
+                <label asp-for="FullName" class="form-label"></label>
+                <input asp-for="FullName" class="form-control" autocomplete="off" />
+                <span asp-validation-for="FullName" class="field-validation-error"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" autocomplete="off" />
+                <span asp-validation-for="Email" class="field-validation-error"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Role" class="form-label"></label>
+                <select asp-for="Role" asp-items="Model.Roles" class="form-select">
+                    <option value="">Select a role</option>
+                </select>
+                <span asp-validation-for="Role" class="field-validation-error"></span>
+                <div class="form-text">Admin is required to manage users and reverse transactions.</div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title">Initial password</div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Password" class="form-label"></label>
+                    <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="Password" class="field-validation-error"></span>
+                    <div class="form-text">At least 10 characters, including upper, lower, digit and symbol.</div>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="ConfirmPassword" class="form-label"></label>
+                    <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="ConfirmPassword" class="field-validation-error"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary" data-loading-label="Creating…">
+                <i class="bi bi-person-plus me-1" aria-hidden="true"></i> Create user
+            </button>
+        </div>
+    </div>
+</form>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

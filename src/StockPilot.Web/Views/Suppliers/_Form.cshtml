@@ -1,0 +1,50 @@
+@model SupplierFormViewModel
+<div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small" role="alert"></div>
+<div class="card form-card">
+    <div class="form-section">
+        <div class="form-section-title">Business details</div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="BusinessName" class="form-label">Business name <span class="text-danger" aria-hidden="true">*</span></label>
+                <input asp-for="BusinessName" class="form-control" placeholder="Supplier or company name" />
+                <span asp-validation-for="BusinessName" class="field-validation-error"></span>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="form-check mb-2">
+                    <input asp-for="IsActive" class="form-check-input" />
+                    <label asp-for="IsActive" class="form-check-label">Active supplier</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ContactPerson" class="form-label"></label>
+                <input asp-for="ContactPerson" class="form-control" placeholder="Primary contact" />
+                <span asp-validation-for="ContactPerson" class="field-validation-error"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Phone" class="form-label"></label>
+                <input asp-for="Phone" class="form-control" placeholder="+977-1-555-0100" />
+                <span asp-validation-for="Phone" class="field-validation-error"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" placeholder="orders@example.com" />
+                <span asp-validation-for="Email" class="field-validation-error"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Address" class="form-label"></label>
+                <input asp-for="Address" class="form-control" placeholder="Street, city" />
+                <span asp-validation-for="Address" class="field-validation-error"></span>
+            </div>
+        </div>
+    </div>
+    <div class="form-section">
+        <div class="form-section-title">Internal notes</div>
+        <label asp-for="Notes" class="form-label"></label>
+        <textarea asp-for="Notes" class="form-control" rows="3" placeholder="Payment terms, delivery schedule, etc."></textarea>
+        <span asp-validation-for="Notes" class="field-validation-error"></span>
+    </div>
+    <div class="form-actions">
+        <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" data-loading-label="Saving…">Save supplier</button>
+    </div>
+</div>

@@ -1,0 +1,129 @@
+@model PaginatedList<Product>
+@{
+    ViewData["Title"] = "Products";
+    var canManage = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.InventoryStaff);
+    var categories = ViewBag.Categories as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [];
+}
+
+<div class="page-header">
+    <div>
+        <h1>Product catalogue</h1>
+        <p>Master data, selling prices and live stock positions for every SKU.</p>
+    </div>
+    @if (canManage)
+    {
+        <div class="page-actions">
+            <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i> New product</a>
+        </div>
+    }
+</div>
+
+<form method="get" asp-action="Index" class="card filter-bar section-gap">
+    <div class="filter-grid">
+        <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" name="search" value="@ViewBag.Search" class="form-control" placeholder="Name or SKU" />
+        </div>
+        <div>
+            <label for="categoryId" class="form-label">Category</label>
+            <select id="categoryId" name="categoryId" class="form-select" asp-items="categories">
+                <option value="">All categories</option>
+            </select>
+        </div>
+        <div>
+            <label for="stockStatus" class="form-label">Stock</label>
+            <select id="stockStatus" name="stockStatus" class="form-select">
+                <option value="">Any stock level</option>
+                <option value="in" selected="@(ViewBag.StockStatus == "in")">In stock</option>
+                <option value="low" selected="@(ViewBag.StockStatus == "low")">Low stock</option>
+                <option value="out" selected="@(ViewBag.StockStatus == "out")">Out of stock</option>
+            </select>
+        </div>
+        <div>
+            <label for="status" class="form-label">Status &amp; sort</label>
+            <div class="d-flex gap-2">
+                <select id="status" name="status" class="form-select">
+                    <option value="">All</option>
+                    <option value="active" selected="@(ViewBag.Status == "active")">Active</option>
+                    <option value="inactive" selected="@(ViewBag.Status == "inactive")">Inactive</option>
+                </select>
+                <select name="sort" class="form-select" aria-label="Sort products">
+                    <option value="">Name A–Z</option>
+                    <option value="name_desc" selected="@(ViewBag.Sort == "name_desc")">Name Z–A</option>
+                    <option value="sku" selected="@(ViewBag.Sort == "sku")">SKU A–Z</option>
+                    <option value="stock" selected="@(ViewBag.Sort == "stock")">Stock low–high</option>
+                    <option value="stock_desc" selected="@(ViewBag.Sort == "stock_desc")">Stock high–low</option>
+                    <option value="value_desc" selected="@(ViewBag.Sort == "value_desc")">Value high–low</option>
+                </select>
+            </div>
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel" aria-hidden="true"></i></button>
+            <a asp-action="Index" class="btn btn-outline-secondary" aria-label="Reset filters"><i class="bi bi-x-lg" aria-hidden="true"></i></a>
+        </div>
+    </div>
+</form>
+
+<div class="card table-card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-box" aria-hidden="true"></i>
+            <h3>No products match these filters</h3>
+            <p>Adjust your search, or create a new product to start building the catalogue.</p>
+            @if (canManage)
+            {
+                <a asp-action="Create" class="btn btn-primary mt-3">Create product</a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product</th><th>Category</th><th>Unit</th>
+                        <th class="num">Cost</th><th class="num">Selling</th>
+                        <th class="num">On hand</th><th class="num">Reorder</th><th>Status</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Model)
+                    {
+                        var quantity = product.InventoryBalance?.QuantityOnHand ?? 0;
+                        <tr>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@product.Id" class="strong link-quiet">@product.Name</a>
+                                <span class="table-sub mono">@product.Sku</span>
+                            </td>
+                            <td>@product.Category.Name</td>
+                            <td>@product.Unit.Code</td>
+                            <td class="num">@UiHelpers.Number(product.CostPrice)</td>
+                            <td class="num">@UiHelpers.Number(product.SellingPrice)</td>
+                            <td class="num">
+                                <span class="badge @UiHelpers.StockClass(quantity, product.ReorderLevel)">@UiHelpers.Quantity(quantity)</span>
+                            </td>
+                            <td class="num text-muted">@UiHelpers.Quantity(product.ReorderLevel)</td>
+                            <td>
+                                @if (product.IsActive)
+                                {
+                                    <span class="badge badge-soft-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-soft-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="table-actions">
+                                <a asp-action="Details" asp-route-id="@product.Id" class="btn btn-outline-secondary"
+                                   aria-label="View @product.Name">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model" />
+    }
+</div>

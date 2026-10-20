@@ -1,8 +1,308 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var maxActivity = Model.ActivityDays
+        .Select(d => Math.Max(d.Purchases, d.Sales))
+        .DefaultIfEmpty(0m)
+        .Max();
+    var scale = maxActivity <= 0 ? 1m : maxActivity;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="page-header">
+    <div class="page-header-copy">
+        <h1>Inventory overview</h1>
+        <p>Live position for @Model.FromUtc.ToString("dd MMM") – @Model.ToUtc.ToString("dd MMM yyyy") · all values from the stock ledger.</p>
+    </div>
+    <div class="page-actions">
+        @if (User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.InventoryStaff))
+        {
+            <a asp-controller="Purchases" asp-action="Create" class="btn btn-outline-secondary">
+                <i class="bi bi-cart-plus me-1" aria-hidden="true"></i> New purchase
+            </a>
+            <a asp-controller="Sales" asp-action="Create" class="btn btn-primary">
+                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> New sale
+            </a>
+        }
+    </div>
+</div>
+
+<form method="get" asp-action="Index" class="card filter-bar section-gap">
+    <div class="row g-2 align-items-end">
+        <div class="col-sm-6 col-lg-3">
+            <label for="from" class="form-label">Summary from</label>
+            <input type="date" id="from" name="from" class="form-control" value="@Model.FromUtc.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <label for="to" class="form-label">Summary to</label>
+            <input type="date" id="to" name="to" class="form-control" value="@Model.ToUtc.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="col-lg-4 filter-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-funnel me-1" aria-hidden="true"></i> Apply
+            </button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+        </div>
+        <div class="col-lg-2 text-lg-end text-muted text-small">Metrics show period activity; stock is live.</div>
+    </div>
+</form>
+
+<div class="stat-grid stat-grid-five">
+    <div class="stat-card" style="--accent:#2563eb;--icon-bg:#e9f0ff;--icon-fg:#1d4ed8">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Inventory value</div>
+                <div class="stat-value">@UiHelpers.Money(Model.InventoryValue)</div>
+                <div class="stat-meta">Weighted-average cost</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-cash-stack" aria-hidden="true"></i></span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="--accent:#0f8a5f;--icon-bg:#e7f7f0;--icon-fg:#0f8a5f">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Active products</div>
+                <div class="stat-value">@Model.ActiveProducts</div>
+                <div class="stat-meta">@Model.ActiveCategories active categories</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-box" aria-hidden="true"></i></span>
+        </div>
+    </div>
+
+    <div class="stat-card" style="--accent:#7c3aed;--icon-bg:#f1ebff;--icon-fg:#6d28d9">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Suppliers</div>
+                <div class="stat-value">@Model.ActiveSuppliers</div>
+                <div class="stat-meta">Active supply partners</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-truck" aria-hidden="true"></i></span>
+        </div>
+    </div>
+
+    <a class="stat-card link-quiet" asp-controller="Reports" asp-action="LowStock"
+       style="--accent:#d97706;--icon-bg:#fff6e5;--icon-fg:#b45309">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Low stock</div>
+                <div class="stat-value">@Model.LowStockCount</div>
+                <div class="stat-meta">At or below reorder level</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i></span>
+        </div>
+    </a>
+
+    <a class="stat-card link-quiet" asp-controller="Reports" asp-action="OutOfStock"
+       style="--accent:#b42318;--icon-bg:#fef0ef;--icon-fg:#b42318">
+        <div class="stat-top">
+            <div>
+                <div class="stat-label">Out of stock</div>
+                <div class="stat-value">@Model.OutOfStockCount</div>
+                <div class="stat-meta">No available quantity</div>
+            </div>
+            <span class="stat-icon"><i class="bi bi-slash-circle" aria-hidden="true"></i></span>
+        </div>
+    </a>
+</div>
+
+<div class="dashboard-grid section-gap">
+    <div class="stack">
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2>Activity · last 14 days</h2>
+                    <span class="text-muted text-small">Completed sales and received purchases</span>
+                </div>
+                <div class="chart-legend" aria-hidden="true">
+                    <span><span class="legend-dot" style="background:#3b82f6"></span>Sales</span>
+                    <span><span class="legend-dot" style="background:#93c5fd"></span>Purchases</span>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (maxActivity <= 0)
+                {
+                    <div class="empty-state py-4">
+                        <i class="bi bi-bar-chart" aria-hidden="true"></i>
+                        <h3>No activity in this window</h3>
+                        <p>Completed sales and received purchases will appear here.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="activity-chart" role="img" aria-label="Bar chart of daily sales and purchases for the last 14 days">
+                        @foreach (var day in Model.ActivityDays)
+                        {
+                            var salesHeight = Math.Max(2, (int)Math.Round(day.Sales / scale * 100));
+                            var purchaseHeight = Math.Max(2, (int)Math.Round(day.Purchases / scale * 100));
+                            <div class="bar-group" title="@day.DateUtc.ToString("dd MMM"): sales @UiHelpers.Money(day.Sales), purchases @UiHelpers.Money(day.Purchases)">
+                                <div class="bar-pair">
+                                    <div class="bar bar-sales" style="height:@(salesHeight)%"></div>
+                                    <div class="bar bar-purchases" style="height:@(purchaseHeight)%"></div>
+                                </div>
+                                <span class="bar-label">@day.DateUtc.ToString("dd MMM")</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card table-card">
+            <div class="card-header">
+                <h2>Recent sales</h2>
+                <a asp-controller="Sales" asp-action="Index" class="btn btn-sm btn-outline-secondary">View all</a>
+            </div>
+            @if (Model.RecentSales.Count == 0)
+            {
+                <div class="empty-state py-4">
+                    <i class="bi bi-receipt" aria-hidden="true"></i>
+                    <h3>No sales yet</h3>
+                    <p>Create a draft sale and complete it to issue stock.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr><th>Sale</th><th>Customer</th><th>Status</th><th class="num">Total</th><th>Created</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sale in Model.RecentSales)
+                            {
+                                <tr>
+                                    <td><a asp-controller="Sales" asp-action="Details" asp-route-id="@sale.Id" class="strong">@sale.Number</a></td>
+                                    <td>@(sale.Customer ?? "Walk-in / not set")</td>
+                                    <td><span class="badge @UiHelpers.SaleStatusClass(sale.Status)">@sale.Status</span></td>
+                                    <td class="num">@UiHelpers.Money(sale.Total)</td>
+                                    <td class="text-muted text-small">@UiHelpers.Date(sale.CreatedAtUtc)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="stack">
+        <div class="card">
+            <div class="card-header">
+                <h2>Period performance</h2>
+                <span class="text-muted text-small">@Model.FromUtc.ToString("dd MMM") – @Model.ToUtc.ToString("dd MMM")</span>
+            </div>
+            <div class="card-body">
+                <div class="total-row"><span>Sales revenue</span><span class="money">@UiHelpers.Money(Model.PeriodSalesTotal)</span></div>
+                <div class="total-row"><span>Cost of goods sold</span><span class="money">@UiHelpers.Money(Model.PeriodCostOfGoodsSold)</span></div>
+                <div class="total-row"><span>Purchase spend</span><span class="money">@UiHelpers.Money(Model.PeriodPurchaseTotal)</span></div>
+                <div class="total-row grand"><span>Gross margin</span><span>@UiHelpers.Money(Model.PeriodGrossMargin)</span></div>
+                <p class="text-muted text-small mt-3 mb-0">Gross margin uses weighted-average cost at the time of each sale.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h2>Quick actions</h2></div>
+            <div class="card-body d-grid gap-2">
+                <a asp-controller="Products" asp-action="Index" class="btn btn-outline-secondary text-start">
+                    <i class="bi bi-box me-2" aria-hidden="true"></i>Browse product catalogue
+                </a>
+                <a asp-controller="Reports" asp-action="Valuation" class="btn btn-outline-secondary text-start">
+                    <i class="bi bi-calculator me-2" aria-hidden="true"></i>Inventory valuation
+                </a>
+                @if (User.IsInRole(AppRoles.Admin))
+                {
+                    <a asp-controller="Stock" asp-action="Adjust" class="btn btn-outline-secondary text-start">
+                        <i class="bi bi-sliders me-2" aria-hidden="true"></i>Adjust stock
+                    </a>
+                }
+                @if (User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.InventoryStaff))
+                {
+                    <a asp-controller="Suppliers" asp-action="Create" class="btn btn-outline-secondary text-start">
+                        <i class="bi bi-building-add me-2" aria-hidden="true"></i>Add supplier
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card table-card section-gap">
+    <div class="card-header">
+        <h2>Recent purchases</h2>
+        <a asp-controller="Purchases" asp-action="Index" class="btn btn-sm btn-outline-secondary">View all</a>
+    </div>
+    @if (Model.RecentPurchases.Count == 0)
+    {
+        <div class="empty-state py-4">
+            <i class="bi bi-cart" aria-hidden="true"></i>
+            <h3>No purchases yet</h3>
+            <p>Draft a purchase and receive it to add stock.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Purchase</th><th>Supplier</th><th>Status</th><th class="num">Total</th><th>Created</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var purchase in Model.RecentPurchases)
+                    {
+                        <tr>
+                            <td><a asp-controller="Purchases" asp-action="Details" asp-route-id="@purchase.Id" class="strong">@purchase.Number</a></td>
+                            <td>@purchase.Supplier</td>
+                            <td><span class="badge @UiHelpers.PurchaseStatusClass(purchase.Status)">@purchase.Status</span></td>
+                            <td class="num">@UiHelpers.Money(purchase.Total)</td>
+                            <td class="text-muted text-small">@UiHelpers.Date(purchase.CreatedAtUtc)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<div class="card table-card">
+    <div class="card-header">
+        <h2>Latest stock movements</h2>
+        <a asp-controller="Stock" asp-action="Index" class="btn btn-sm btn-outline-secondary">Full ledger</a>
+    </div>
+    @if (Model.RecentMovements.Count == 0)
+    {
+        <div class="empty-state py-4">
+            <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+            <h3>No stock movements</h3>
+            <p>Opening stock, purchases and sales will build the ledger.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>Product</th><th>Movement</th><th class="num">Change</th><th class="num">Balance</th><th>Reference</th><th>User</th><th>When</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var movement in Model.RecentMovements)
+                    {
+                        <tr>
+                            <td>
+                                <span class="strong">@movement.Product</span>
+                                <span class="table-sub mono">@movement.Sku</span>
+                            </td>
+                            <td><span class="badge @UiHelpers.MovementTypeClass(movement.Type)">@UiHelpers.MovementTypeLabel(movement.Type)</span></td>
+                            <td class="num @(movement.QuantityChange < 0 ? "qty-neg" : "qty-pos")">
+                                @(movement.QuantityChange > 0 ? "+" : "")@UiHelpers.Quantity(movement.QuantityChange)
+                            </td>
+                            <td class="num">@UiHelpers.Quantity(movement.BalanceAfter)</td>
+                            <td class="mono text-small">@(movement.Reference ?? "—")</td>
+                            <td class="text-small">@movement.User</td>
+                            <td class="text-muted text-small">@UiHelpers.Date(movement.CreatedAtUtc)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>

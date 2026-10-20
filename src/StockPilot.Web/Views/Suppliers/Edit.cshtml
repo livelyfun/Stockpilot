@@ -1,0 +1,18 @@
+@model SupplierFormViewModel
+@{
+    ViewData["Title"] = "Edit supplier";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Suppliers</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol></nav>
+        <h1>Edit supplier</h1>
+        <p>Update contact information and account status.</p>
+    </div>
+</div>
+<form asp-action="Edit" method="post" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -1,0 +1,150 @@
+@model Sale
+@{
+    ViewData["Title"] = Model.SaleNumber;
+    var canManage = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.InventoryStaff);
+    var canReverse = (bool)(ViewBag.CanReverse ?? false);
+    var lineCount = Model.Items.Count;
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Sales</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.SaleNumber</li>
+        </ol></nav>
+        <div class="status-line">
+            <h1 class="mb-0 mono">@Model.SaleNumber</h1>
+            <span class="badge @UiHelpers.SaleStatusClass(Model.Status)">@Model.Status</span>
+        </div>
+        <p>@(string.IsNullOrWhiteSpace(Model.CustomerName) ? "Walk-in customer" : Model.CustomerName) · @lineCount line@(lineCount == 1 ? "" : "s") · created @UiHelpers.Date(Model.CreatedAtUtc)</p>
+    </div>
+    <div class="page-actions">
+        @if (canManage && Model.Status == SaleStatus.Draft)
+        {
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil me-1" aria-hidden="true"></i> Edit draft
+            </a>
+            <form asp-action="Cancel" asp-route-id="@Model.Id" method="post" class="inline-form"
+                  data-confirm="Cancel this draft sale? No stock has been issued yet.">
+                <button type="submit" class="btn btn-outline-secondary">Cancel draft</button>
+            </form>
+            <form asp-action="Complete" asp-route-id="@Model.Id" method="post" class="inline-form"
+                  data-confirm="Complete @Model.SaleNumber? Stock will be deducted for every line and availability is re-checked.">
+                <button type="submit" class="btn btn-primary" data-loading-label="Completing…">
+                    <i class="bi bi-box-arrow-up me-1" aria-hidden="true"></i> Complete sale
+                </button>
+            </form>
+        }
+    </div>
+</div>
+
+@if (Model.Status == SaleStatus.Completed)
+{
+    <div class="callout section-gap">
+        <i class="bi bi-check-circle me-1" aria-hidden="true"></i>
+        Stock was issued @UiHelpers.Date(Model.CompletedAtUtc) by @(Model.CompletedByUser?.FullName ?? Model.CompletedByUser?.UserName ?? "unknown user").
+        Cost of goods is recorded at the weighted-average cost on the issue date.
+    </div>
+}
+else if (Model.Status == SaleStatus.Reversed)
+{
+    <div class="callout callout-warning section-gap">
+        <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>
+        This sale was reversed @UiHelpers.Date(Model.ReversedAtUtc) by @(Model.ReversedByUser?.FullName ?? "an administrator").
+        Returned stock was restored at the original issue cost. Reason: @(Model.ReversalReason ?? "not recorded")
+    </div>
+}
+
+<div class="detail-grid section-gap">
+    <div class="card table-card">
+        <div class="card-header">
+            <h2>Sale lines</h2>
+            <span class="text-muted text-small">Prices are locked to this sale</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th class="num">Quantity</th>
+                        <th class="num">Unit price</th>
+                        <th class="num">Line total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Items.OrderBy(i => i.Product.Name))
+                    {
+                        <tr>
+                            <td>
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId" class="strong link-quiet">@item.Product.Name</a>
+                                <span class="table-sub mono">@item.Product.Sku</span>
+                            </td>
+                            <td class="num">@UiHelpers.Quantity(item.Quantity) <span class="text-muted">@item.Product.Unit.Code</span></td>
+                            <td class="num">@UiHelpers.Number(item.UnitPrice)</td>
+                            <td class="num money">@UiHelpers.Money(item.LineTotal)</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end text-muted">Total</td>
+                        <td class="num fw-bold">@UiHelpers.Money(Model.TotalAmount)</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <div class="card-footer text-muted text-small">
+                <i class="bi bi-sticky me-1" aria-hidden="true"></i>@Model.Notes
+            </div>
+        }
+    </div>
+
+    <div class="stack">
+        <div class="card">
+            <div class="card-header"><h2>Document details</h2></div>
+            <div class="card-body">
+                <dl class="detail-list">
+                    <div>
+                        <dt>Customer</dt>
+                        <dd>@(string.IsNullOrWhiteSpace(Model.CustomerName) ? "Walk-in customer" : Model.CustomerName)</dd>
+                    </div>
+                    <div><dt>Status</dt><dd><span class="badge @UiHelpers.SaleStatusClass(Model.Status)">@Model.Status</span></dd></div>
+                    <div><dt>Created</dt><dd>@UiHelpers.Date(Model.CreatedAtUtc)</dd></div>
+                    <div><dt>Created by</dt><dd>@(Model.CreatedByUser?.FullName ?? Model.CreatedByUser?.UserName ?? "—")</dd></div>
+                    <div><dt>Completed</dt><dd>@UiHelpers.Date(Model.CompletedAtUtc)</dd></div>
+                    <div><dt>Completed by</dt><dd>@(Model.CompletedByUser?.FullName ?? Model.CompletedByUser?.UserName ?? "—")</dd></div>
+                </dl>
+            </div>
+        </div>
+
+        @if (canReverse)
+        {
+            <div class="card">
+                <div class="card-header"><h2>Reverse sale</h2></div>
+                <div class="card-body">
+                    <p class="text-small text-muted">
+                        Reversing returns the sold quantities to stock at their original issue cost and records
+                        compensating ledger entries. The action is audited.
+                    </p>
+                    <form asp-action="Reverse" asp-route-id="@Model.Id" method="post"
+                          data-confirm="Reverse @Model.SaleNumber? Stock will be returned and the action is audited.">
+                        <div class="mb-2">
+                            <label for="reason" class="form-label">Reason <span class="text-danger" aria-hidden="true">*</span></label>
+                            <textarea id="reason" name="reason" class="form-control" rows="2" minlength="5" required
+                                      placeholder="e.g. Customer returned the full order"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger-soft w-100" data-loading-label="Reversing…">
+                            <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i> Reverse sale
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Index" class="btn btn-outline-secondary"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i> Back to sales</a>
+</div>

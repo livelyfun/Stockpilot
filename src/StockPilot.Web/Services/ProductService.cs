@@ -3,6 +3,7 @@ using Npgsql;
 using StockPilot.Web.Data;
 using StockPilot.Web.Entities;
 using StockPilot.Web.Infrastructure;
+using StockPilot.Web.ViewModels;
 
 namespace StockPilot.Web.Services;
 
@@ -32,6 +33,7 @@ public interface IProductService
     Task<Product?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
     Task<List<Category>> GetCategoriesAsync(bool activeOnly = false, CancellationToken cancellationToken = default);
     Task<List<Unit>> GetUnitsAsync(bool activeOnly = false, CancellationToken cancellationToken = default);
+    Task<List<ProductOption>> GetOptionsAsync(bool activeOnly = true, CancellationToken cancellationToken = default);
     Task<Product> CreateAsync(ProductInput input, string actorUserId, CancellationToken cancellationToken = default);
     Task<Product> UpdateAsync(int id, ProductInput input, string actorUserId, CancellationToken cancellationToken = default);
     Task SetActiveAsync(int id, bool isActive, string actorUserId, CancellationToken cancellationToken = default);
@@ -132,6 +134,28 @@ public class ProductService : IProductService
         }
 
         return query.OrderBy(u => u.Name).ToListAsync(cancellationToken);
+    }
+
+    public Task<List<ProductOption>> GetOptionsAsync(bool activeOnly = true, CancellationToken cancellationToken = default)
+    {
+        var query = _db.Products.AsNoTracking().AsQueryable();
+        if (activeOnly)
+        {
+            query = query.Where(p => p.IsActive);
+        }
+
+        return query
+            .OrderBy(p => p.Name)
+            .Select(p => new ProductOption(
+                p.Id,
+                p.Sku,
+                p.Name,
+                p.CostPrice,
+                p.SellingPrice,
+                p.InventoryBalance != null ? p.InventoryBalance.QuantityOnHand : 0,
+                p.Unit.Code,
+                p.ReorderLevel))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<Product> CreateAsync(ProductInput input, string actorUserId, CancellationToken cancellationToken = default)

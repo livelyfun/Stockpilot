@@ -1,0 +1,94 @@
+@model PaginatedList<AuditLog>
+@{
+    ViewData["Title"] = "Audit logs";
+    var actions = ViewBag.Actions as List<string> ?? [];
+    var selectedAction = ViewBag.Action as string;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Audit logs</h1>
+        <p>Append-only record of security and inventory actions. Entries cannot be edited or deleted in the app.</p>
+    </div>
+</div>
+
+<form method="get" asp-action="Index" class="card filter-bar section-gap">
+    <div class="filter-grid">
+        <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" name="search" value="@ViewBag.Search" class="form-control" placeholder="User, entity or details" />
+        </div>
+        <div>
+            <label for="action" class="form-label">Action</label>
+            <select id="action" name="action" class="form-select">
+                <option value="">All actions</option>
+                @foreach (var action in actions)
+                {
+                    <option value="@action" selected="@(selectedAction == action)">@action</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="from" class="form-label">From</label>
+            <input id="from" type="date" name="from" value="@ViewBag.From" class="form-control" />
+        </div>
+        <div>
+            <label for="to" class="form-label">To</label>
+            <input id="to" type="date" name="to" value="@ViewBag.To" class="form-control" />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1" aria-hidden="true"></i> Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card table-card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-shield-check" aria-hidden="true"></i>
+            <h3>No audit entries match this filter</h3>
+            <p>Adjust the filters to widen the search.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr><th>When</th><th>User</th><th>Action</th><th>Entity</th><th>Details</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td class="text-muted text-small text-nowrap">@UiHelpers.Date(log.CreatedAtUtc)</td>
+                            <td class="text-small">@log.UserName</td>
+                            <td><span class="badge badge-soft-primary">@log.Action</span></td>
+                            <td class="text-small">
+                                <span class="mono">@log.EntityType</span>
+                                <span class="table-sub mono">@log.EntityId</span>
+                            </td>
+                            <td class="text-small text-muted">
+                                @if (!string.IsNullOrWhiteSpace(log.Details))
+                                {
+                                    var text = log.Details.Length > 90 ? log.Details[..90] + "…" : log.Details;
+                                    <span title="@log.Details">@text</span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+                            <td class="table-actions">
+                                <a asp-action="Details" asp-route-id="@log.Id" class="btn btn-outline-secondary">View</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model" />
+    }
+</div>

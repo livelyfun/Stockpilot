@@ -1,0 +1,128 @@
+@model MovementReportPageViewModel
+@{
+    ViewData["Title"] = "Stock ledger report";
+    var filter = Model.Filter;
+    var selectedProduct = filter.ProductId?.ToString();
+    var selectedUser = filter.UserId;
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Reports</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Stock ledger</li>
+        </ol></nav>
+        <h1>Stock ledger report</h1>
+        <p>Complete movement history with cost and value impact. Exports are capped at 10,000 rows.</p>
+    </div>
+    <div class="page-actions">
+        <a asp-action="ExportMovements"
+           asp-route-productId="@filter.ProductId" asp-route-movementType="@filter.MovementType"
+           asp-route-userId="@filter.UserId" asp-route-search="@filter.Search"
+           asp-route-from="@filter.From?.ToString("yyyy-MM-dd")" asp-route-to="@filter.To?.ToString("yyyy-MM-dd")"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-download me-1" aria-hidden="true"></i> Export CSV
+        </a>
+        <a asp-controller="Stock" asp-action="Index" class="btn btn-primary">
+            <i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i> Movements
+        </a>
+    </div>
+</div>
+
+<form method="get" asp-action="Movements" class="card filter-bar section-gap">
+    <div class="filter-grid">
+        <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" name="search" value="@filter.Search" class="form-control" placeholder="SKU, product or reference" />
+        </div>
+        <div>
+            <label for="productId" class="form-label">Product</label>
+            <select id="productId" name="productId" class="form-select">
+                <option value="">All products</option>
+                @foreach (var product in Model.Products)
+                {
+                    <option value="@product.Value" selected="@(product.Value == selectedProduct)">@product.Text</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="movementType" class="form-label">Movement type</label>
+            <select id="movementType" name="movementType" class="form-select">
+                <option value="">All types</option>
+                @foreach (var type in Enum.GetValues<StockMovementType>())
+                {
+                    <option value="@type" selected="@(filter.MovementType == type)">@UiHelpers.MovementTypeLabel(type)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="userId" class="form-label">User</label>
+            <select id="userId" name="userId" class="form-select">
+                <option value="">All users</option>
+                @foreach (var user in Model.Users)
+                {
+                    <option value="@user.Value" selected="@(user.Value == selectedUser)">@user.Text</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="from" class="form-label">From</label>
+            <input id="from" type="date" name="from" value="@filter.From?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div>
+            <label for="to" class="form-label">To</label>
+            <input id="to" type="date" name="to" value="@filter.To?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1" aria-hidden="true"></i> Filter</button>
+            <a asp-action="Movements" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card table-card">
+    @if (Model.Rows.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+            <h3>No movements match this report</h3>
+            <p>Adjust the filters or record stock activity to see results.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Product</th><th>Type</th><th class="num">Change</th>
+                        <th class="num">Balance</th><th class="num">Unit cost</th><th class="num">Value change</th>
+                        <th>Reference</th><th>User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            <td class="text-muted text-small">@UiHelpers.Date(row.CreatedAtUtc)</td>
+                            <td>
+                                <span class="strong">@row.Product</span>
+                                <span class="table-sub mono">@row.Sku</span>
+                            </td>
+                            <td><span class="badge @UiHelpers.MovementTypeClass(row.MovementType)">@UiHelpers.MovementTypeLabel(row.MovementType)</span></td>
+                            <td class="num @(row.QuantityChange < 0 ? "qty-neg" : "qty-pos")">
+                                @(row.QuantityChange > 0 ? "+" : "")@UiHelpers.Quantity(row.QuantityChange)
+                            </td>
+                            <td class="num">@UiHelpers.Quantity(row.BalanceAfter)</td>
+                            <td class="num">@UiHelpers.Money(row.UnitCost)</td>
+                            <td class="num">@UiHelpers.Money(row.ValueChange)</td>
+                            <td class="mono text-small">@(row.ReferenceNumber ?? "—")</td>
+                            <td class="text-small">@row.User</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model.Rows" />
+    }
+</div>

@@ -1,0 +1,75 @@
+@model EditUserViewModel
+@{
+    ViewData["Title"] = "Edit user";
+}
+
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Users</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.FullName</li>
+        </ol></nav>
+        <h1>Edit user</h1>
+        <p>Update profile, role and access. Deactivating an account blocks future sign-in without deleting history.</p>
+    </div>
+</div>
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post" class="form-narrow" novalidate>
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="CreatedAtUtc" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 px-3 small" role="alert"></div>
+
+    <div class="card form-card">
+        <div class="form-section">
+            <div class="form-section-title">Account</div>
+
+            <div class="mb-3">
+                <label asp-for="FullName" class="form-label"></label>
+                <input asp-for="FullName" class="form-control" />
+                <span asp-validation-for="FullName" class="field-validation-error"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="field-validation-error"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Role" class="form-label"></label>
+                <select asp-for="Role" asp-items="Model.Roles" class="form-select">
+                    <option value="">Select a role</option>
+                </select>
+                <span asp-validation-for="Role" class="field-validation-error"></span>
+            </div>
+
+            <div class="form-check">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+                <div class="form-text">Inactive accounts cannot sign in. You cannot deactivate your own account.</div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-section-title">Account history</div>
+            <dl class="detail-list">
+                <div><dt>Created</dt><dd>@UiHelpers.Date(Model.CreatedAtUtc)</dd></div>
+                <div><dt>Last sign-in</dt><dd>@UiHelpers.Date(Model.LastLoginAtUtc)</dd></div>
+            </dl>
+        </div>
+
+        <div class="form-actions justify-content-between">
+            <a asp-action="ResetPassword" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                <i class="bi bi-key me-1" aria-hidden="true"></i> Reset password
+            </a>
+            <div class="d-flex gap-2">
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary" data-loading-label="Saving…">
+                    <i class="bi bi-save me-1" aria-hidden="true"></i> Save changes
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

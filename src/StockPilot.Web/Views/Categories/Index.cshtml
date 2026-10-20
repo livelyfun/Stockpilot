@@ -1,0 +1,95 @@
+@model PaginatedList<Category>
+@{
+    ViewData["Title"] = "Categories";
+    var canManage = User.IsInRole(AppRoles.Admin) || User.IsInRole(AppRoles.InventoryStaff);
+    var includeInactive = (bool)(ViewBag.IncludeInactive ?? false);
+}
+
+<div class="page-header">
+    <div>
+        <h1>Categories</h1>
+        <p>Organize the product catalogue and report inventory value by category.</p>
+    </div>
+    @if (canManage)
+    {
+        <div class="page-actions">
+            <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i> New category</a>
+        </div>
+    }
+</div>
+
+<form method="get" asp-action="Index" class="card filter-bar section-gap">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label for="search" class="form-label">Search category</label>
+            <input id="search" name="search" value="@ViewBag.Search" class="form-control" placeholder="Category name" />
+        </div>
+        <div class="col-md-3">
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="includeInactive" name="includeInactive" value="true" checked="@includeInactive" />
+                <label class="form-check-label" for="includeInactive">Show inactive</label>
+            </div>
+        </div>
+        <div class="col-md-4 filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1" aria-hidden="true"></i> Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+<div class="card table-card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-tags" aria-hidden="true"></i>
+            <h3>No categories found</h3>
+            <p>Create a category to start organizing products.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr><th>Category</th><th>Description</th><th class="num">Products</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                    @foreach (var category in Model)
+                    {
+                        <tr>
+                            <td class="strong">@category.Name</td>
+                            <td class="text-muted">@(category.Description ?? "—")</td>
+                            <td class="num">@category.Products.Count</td>
+                            <td>
+                                @if (category.IsActive)
+                                {
+                                    <span class="badge badge-soft-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-soft-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="table-actions">
+                                @if (canManage)
+                                {
+                                    <a asp-action="Edit" asp-route-id="@category.Id" class="btn btn-outline-secondary">Edit</a>
+                                    <form asp-action="ToggleActive" asp-route-id="@category.Id" method="post" class="d-inline"
+                                          data-confirm="@(category.IsActive ? "Deactivate this category?" : "Activate this category?")">
+                                        <input type="hidden" name="isActive" value="@(!category.IsActive)" />
+                                        <button type="submit" class="btn btn-outline-secondary">@(category.IsActive ? "Deactivate" : "Activate")</button>
+                                    </form>
+                                    <form asp-action="Delete" asp-route-id="@category.Id" method="post" class="d-inline"
+                                          data-confirm="Delete this category? This only works when it has no products.">
+                                        <button type="submit" class="btn btn-danger-soft" aria-label="Delete @category.Name">
+                                            <i class="bi bi-trash" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model" />
+    }
+</div>

@@ -1,0 +1,18 @@
+@model PurchaseFormViewModel
+@{
+    ViewData["Title"] = "Edit draft purchase";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Purchases</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit draft</li>
+        </ol></nav>
+        <h1>Edit draft purchase</h1>
+        <p>Line items can be changed only while the purchase is still a draft.</p>
+    </div>
+</div>
+<form asp-action="Edit" method="post" data-lines-form="purchase" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 namespace StockPilot.Web.Infrastructure;
 
 /// <summary>Simple server-side pagination wrapper.</summary>
-public class PaginatedList<T> : List<T>
+public class PaginatedList<T> : List<T>, IPaginatedMetadata
 {
     public int PageIndex { get; init; }
     public int PageSize { get; init; }

@@ -1,0 +1,18 @@
+@model SaleFormViewModel
+@{
+    ViewData["Title"] = "New sale";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Sales</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol></nav>
+        <h1>Draft sale</h1>
+        <p>Add customer details and product lines. Stock is issued only when the sale is completed.</p>
+    </div>
+</div>
+<form asp-action="Create" method="post" data-lines-form="sale" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

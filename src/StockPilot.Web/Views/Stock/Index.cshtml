@@ -1,0 +1,157 @@
+@model PaginatedList<StockMovement>
+@{
+    ViewData["Title"] = "Stock movements";
+    var isAdmin = User.IsInRole(AppRoles.Admin);
+    var products = ViewBag.Products as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [];
+    var users = ViewBag.Users as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> ?? [];
+    var selectedProduct = ViewBag.ProductId as int?;
+    var selectedType = ViewBag.MovementType as StockMovementType?;
+    var selectedUser = ViewBag.UserId as string;
+}
+
+<div class="page-header">
+    <div>
+        <h1>Stock movements</h1>
+        <p>Every quantity change, with the user, document and balance it produced.</p>
+    </div>
+    @if (isAdmin)
+    {
+        <div class="page-actions">
+            <a asp-action="OpeningStock" class="btn btn-outline-secondary">
+                <i class="bi bi-flag me-1" aria-hidden="true"></i> Opening stock
+            </a>
+            <a asp-action="Adjust" class="btn btn-primary">
+                <i class="bi bi-sliders me-1" aria-hidden="true"></i> Adjust stock
+            </a>
+        </div>
+    }
+</div>
+
+<form method="get" asp-action="Index" class="card filter-bar section-gap">
+    <div class="filter-grid">
+        <div>
+            <label for="search" class="form-label">Search</label>
+            <input id="search" name="search" value="@ViewBag.Search" class="form-control" placeholder="SKU, product or reference" />
+        </div>
+        <div>
+            <label for="productId" class="form-label">Product</label>
+            <select id="productId" name="productId" class="form-select">
+                <option value="">All products</option>
+                @foreach (var product in products)
+                {
+                    <option value="@product.Value" selected="@(product.Value == selectedProduct?.ToString())">@product.Text</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="movementType" class="form-label">Movement type</label>
+            <select id="movementType" name="movementType" class="form-select">
+                <option value="">All types</option>
+                @foreach (var type in Enum.GetValues<StockMovementType>())
+                {
+                    <option value="@type" selected="@(selectedType == type)">@UiHelpers.MovementTypeLabel(type)</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="userId" class="form-label">User</label>
+            <select id="userId" name="userId" class="form-select">
+                <option value="">All users</option>
+                @foreach (var user in users)
+                {
+                    <option value="@user.Value" selected="@(user.Value == selectedUser)">@user.Text</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label for="from" class="form-label">From</label>
+            <input id="from" type="date" name="from" value="@ViewBag.From" class="form-control" />
+        </div>
+        <div>
+            <label for="to" class="form-label">To</label>
+            <input id="to" type="date" name="to" value="@ViewBag.To" class="form-control" />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1" aria-hidden="true"></i> Filter</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+        </div>
+    </div>
+</form>
+
+@if (selectedProduct is not null)
+{
+    var selected = products.FirstOrDefault(p => p.Value == selectedProduct.ToString());
+    if (selected is not null)
+    {
+        <div class="callout section-gap">
+            <i class="bi bi-funnel me-1" aria-hidden="true"></i>
+            Showing movements for <strong>@selected.Text</strong>.
+            <a asp-action="Index" class="ms-1">Clear product filter</a>
+        </div>
+    }
+}
+
+<div class="card table-card">
+    @if (Model.Count == 0)
+    {
+        <div class="empty-state">
+            <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+            <h3>No stock movements found</h3>
+            <p>Movements appear when purchases are received, sales completed or stock adjusted.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Type</th>
+                        <th class="num">Change</th>
+                        <th class="num">Balance</th>
+                        <th class="num">Value change</th>
+                        <th>Reference</th>
+                        <th>User</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var movement in Model)
+                    {
+                        <tr>
+                            <td class="text-muted text-small">@UiHelpers.Date(movement.CreatedAtUtc)</td>
+                            <td>
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@movement.ProductId" class="strong link-quiet">@movement.Product.Name</a>
+                                <span class="table-sub mono">@movement.Product.Sku</span>
+                            </td>
+                            <td><span class="badge @UiHelpers.MovementTypeClass(movement.MovementType)">@UiHelpers.MovementTypeLabel(movement.MovementType)</span></td>
+                            <td class="num @(movement.QuantityChange < 0 ? "text-danger" : "text-success")">
+                                @(movement.QuantityChange > 0 ? "+" : "")@UiHelpers.Quantity(movement.QuantityChange)
+                                <span class="text-muted">@movement.Product.Unit.Code</span>
+                            </td>
+                            <td class="num">@UiHelpers.Quantity(movement.BalanceAfter)</td>
+                            <td class="num">@UiHelpers.Money(movement.QuantityChange * movement.UnitCost)</td>
+                            <td>
+                                @if (movement.ReferenceType == "Purchase" && movement.ReferenceId is not null)
+                                {
+                                    <a asp-controller="Purchases" asp-action="Details" asp-route-id="@movement.ReferenceId" class="mono text-small">@movement.ReferenceNumber</a>
+                                }
+                                else if (movement.ReferenceType == "Sale" && movement.ReferenceId is not null)
+                                {
+                                    <a asp-controller="Sales" asp-action="Details" asp-route-id="@movement.ReferenceId" class="mono text-small">@movement.ReferenceNumber</a>
+                                }
+                                else
+                                {
+                                    <span class="mono text-small">@(movement.ReferenceNumber ?? "—")</span>
+                                }
+                            </td>
+                            <td class="text-small">@(movement.User?.FullName ?? movement.User?.UserName ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <partial name="_Pagination" model="Model" />
+    }
+</div>

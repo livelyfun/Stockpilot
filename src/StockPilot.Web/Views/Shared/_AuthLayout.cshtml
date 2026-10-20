@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Sign in to StockPilot inventory management" />
+    <title>@ViewData["Title"] · StockPilot</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="auth-body">
+    <main class="auth-shell">
+        <section class="auth-brand-panel" aria-label="About StockPilot">
+            <div class="auth-brand-content">
+                <span class="brand-mark brand-mark-lg"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                <h1>StockPilot</h1>
+                <p class="lead">Inventory control that stays in sync with every movement.</p>
+
+                <ul class="auth-feature-list">
+                    <li><i class="bi bi-check2-circle" aria-hidden="true"></i> Real-time stock balances and movements</li>
+                    <li><i class="bi bi-check2-circle" aria-hidden="true"></i> Purchases, sales and audited adjustments</li>
+                    <li><i class="bi bi-check2-circle" aria-hidden="true"></i> Weighted-average inventory valuation</li>
+                    <li><i class="bi bi-check2-circle" aria-hidden="true"></i> Role-based access and audit trails</li>
+                </ul>
+
+                <p class="auth-footnote">Net-Centric Computing project · ASP.NET Core MVC</p>
+            </div>
+        </section>
+
+        <section class="auth-form-panel">
+            <div class="auth-form-wrap">
+                <div class="d-lg-none mb-4">
+                    <span class="brand-mark"><i class="bi bi-box-seam" aria-hidden="true"></i></span>
+                    <strong class="ms-2 align-middle">StockPilot</strong>
+                </div>
+                @RenderBody()
+                <p class="auth-footer-note">Authorized access only. Accounts are provisioned by an administrator.</p>
+            </div>
+        </section>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

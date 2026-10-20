@@ -1,0 +1,18 @@
+@model CategoryFormViewModel
+@{
+    ViewData["Title"] = "New category";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Categories</a></li>
+            <li class="breadcrumb-item active" aria-current="page">New</li>
+        </ol></nav>
+        <h1>Create category</h1>
+        <p>Categories group products for browsing, filtering and reporting.</p>
+    </div>
+</div>
+<form asp-action="Create" method="post" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

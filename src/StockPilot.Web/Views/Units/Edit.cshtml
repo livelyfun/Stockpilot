@@ -1,0 +1,18 @@
+@model UnitFormViewModel
+@{
+    ViewData["Title"] = "Edit unit";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="Breadcrumb"><ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Units</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Edit</li>
+        </ol></nav>
+        <h1>Edit unit</h1>
+        <p>Update the display name, code or active status.</p>
+    </div>
+</div>
+<form asp-action="Edit" method="post" novalidate>
+    <partial name="_Form" model="Model" />
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
