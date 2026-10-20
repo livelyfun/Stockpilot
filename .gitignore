@@ -1,0 +1,38 @@
+# .NET build artifacts
+bin/
+obj/
+artifacts/
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+*.trx
+
+# IDE / editor
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+.DS_Store
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.local.json
+secrets/
+*.pfx
+*.key
+
+# Logs
+logs/
+*.log
+
+# Local database / temporary files
+*.db
+*.db-shm
+*.db-wal
+tmp/

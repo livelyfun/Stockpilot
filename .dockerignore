@@ -1,0 +1,12 @@
+**/bin
+**/obj
+**/TestResults
+.git
+.github
+.vs
+.vscode
+docs/screenshots
+tests
+.env
+.env.*
+*.md
